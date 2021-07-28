@@ -7,3 +7,6 @@
 [submodule "thirdparty/gmmodulebase"]
 	path = thirdparty/gmmodulebase
 	url = https://github.com/garrynewman/gmod-module-base.git
+[submodule "bullet3"]
+	path = bullet3
+	url = https://github.com/bulletphysics/bullet3
