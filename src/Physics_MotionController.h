@@ -32,7 +32,7 @@ class CPhysicsMotionController : public IController, public IPhysicsMotionContro
 
 	private:
 		IMotionEvent *					m_handler;
-		CUtlVector<CPhysicsObject *>	m_objectList;
+		std::vector<CPhysicsObject *>	m_objectList;
 		CPhysicsEnvironment *			m_pEnv;
 
 		int								m_priority;

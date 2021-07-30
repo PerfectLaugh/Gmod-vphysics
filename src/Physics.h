@@ -4,8 +4,6 @@
 	#pragma once
 #endif
 
-#include <utlhashtable.h>
-
 class IPhysicsEnvironment;
 class IPhysicsCollisionSet;
 
@@ -30,9 +28,9 @@ class CPhysics : public CTier1AppSystem<IPhysics32> {
 		IPhysicsCollisionSet *		FindCollisionSet(unsigned int id);
 		void						DestroyAllCollisionSets();
 	private:
-		CUtlVector<IPhysicsEnvironment *>	m_envList;
-		CUtlVector<IPhysicsCollisionSet *>	m_collisionSets;
-		CUtlHashtable<unsigned int, unsigned int> m_colSetTable;
+		std::vector<IPhysicsEnvironment *>	m_envList;
+		std::vector<IPhysicsCollisionSet *>	m_collisionSets;
+		std::unordered_map<unsigned int, unsigned int> m_colSetTable;
 };
 
 extern CPhysics g_Physics;

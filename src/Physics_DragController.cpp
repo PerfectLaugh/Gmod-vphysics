@@ -25,21 +25,27 @@ float CPhysicsDragController::GetAirDensity() {
 }
 
 void CPhysicsDragController::RemovePhysicsObject(CPhysicsObject *obj) {
-	m_ents.FindAndRemove(obj);
+	auto it = std::find(m_ents.begin(), m_ents.end(), obj);
+	if (it == m_ents.end()) {
+		return;
+	}
+
+	m_ents.erase(it);
 }
 
 void CPhysicsDragController::AddPhysicsObject(CPhysicsObject *obj) {
 	if (!IsControlling(obj)) {
-		m_ents.AddToTail(obj);
+		m_ents.push_back(obj);
 	}
 }
 
 bool CPhysicsDragController::IsControlling(const CPhysicsObject *obj) const {
-	return m_ents.Find((CPhysicsObject *)obj) != -1;
+	auto it = std::find(m_ents.begin(), m_ents.end(), obj);
+	return it != m_ents.end();
 }
 
 void CPhysicsDragController::Tick(btScalar dt) {
-	for (int i = 0; i < m_ents.Count(); i++) {
+	for (int i = 0; i < m_ents.size(); i++) {
 		CPhysicsObject *pObject = (CPhysicsObject *)m_ents[i];
 		btRigidBody *body = pObject->GetObject();
 		if (body->getActivationState() == ISLAND_SLEEPING || body->getActivationState() == DISABLE_SIMULATION)

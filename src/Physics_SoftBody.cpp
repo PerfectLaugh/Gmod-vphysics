@@ -93,8 +93,8 @@ softbodylink_t CPhysicsSoftBody::GetLink(int i) const {
 	ConvertLinkToHL(&link, out);
 
 	// Find the node ids with an educated guess (this will be some huge number if something bad happened)
-	for (int i = 0; i < 2; i++) {
-		out.nodeIndexes[i] = (int)(link.m_n[i] - &m_pSoftBody->m_nodes[0]);
+	for (int c = 0; c < 2; i++) {
+		out.nodeIndexes[c] = (int)(link.m_n[c] - &m_pSoftBody->m_nodes[0]);
 	}
 
 	return out;
@@ -108,8 +108,8 @@ softbodyface_t CPhysicsSoftBody::GetFace(int i) const {
 	ConvertFaceToHL(&face, out);
 
 	// Find the node ids with an educated guess
-	for (int i = 0; i < 3; i++) {
-		out.nodeIndexes[i] = (int)(face.m_n[i] - &m_pSoftBody->m_nodes[0]);
+	for (int c = 0; c < 3; c++) {
+		out.nodeIndexes[c] = (int)(face.m_n[c] - &m_pSoftBody->m_nodes[0]);
 	}
 
 	return out;

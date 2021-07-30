@@ -13,7 +13,7 @@ class CPhysicsKeyParser : public IVPhysicsKeyParser
 {
 	public:
 		CPhysicsKeyParser(const char *pKeyValues);
-		~CPhysicsKeyParser();
+		virtual ~CPhysicsKeyParser();
 
 		void			NextBlock();
 
@@ -36,6 +36,8 @@ class CPhysicsKeyParser : public IVPhysicsKeyParser
 		void			ParseVehicleEngine(vehicle_engineparams_t &engine, KeyValues *kv);
 		void			ParseVehicleEngineBoost(vehicle_engineparams_t &engine, KeyValues *kv);
 		void			ParseVehicleSteering(vehicle_steeringparams_t &steering, KeyValues *kv);
+		void			ParseCollisionRules(ragdollcollisionrules_t* pRules, IVPhysicsKeyHandler* unknownKeyHandler);
+		void			ParseRagdollAnimatedFriction(ragdollanimatedfriction_t* pFriction, IVPhysicsKeyHandler* unknownKeyHandler);
 
 	private:
 		KeyValues *		m_pKeyValues;

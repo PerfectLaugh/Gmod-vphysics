@@ -335,7 +335,7 @@ void CPlayerController::CalculateVelocity(float dt) {
 	((btMassCenterMotionState *)body->getMotionState())->getGraphicTransform(transform);
 	btVector3 deltaPos = m_targetPosition - transform.getOrigin();
 
-	btVector3 baseVelocity(0);
+	btVector3 baseVelocity(0.0, 0.0, 0.0);
 
 	// Are we walking on some sort of vphysics ground? Add their velocity in as a base then
 	// because the game doesn't do this for us!
@@ -380,7 +380,7 @@ bool CPlayerController::TryTeleportObject() {
 	((btMassCenterMotionState *)body->getMotionState())->setGraphicTransform(trans);
 
 	// Kill the velocity
-	body->setLinearVelocity(btVector3(0));
+	body->setLinearVelocity(btVector3(0.0, 0.0, 0.0));
 
 	return true;
 }
@@ -401,13 +401,13 @@ void CPlayerController::AttachObject() {
 
 	m_pObject->AddCallbackFlags(CALLBACK_IS_PLAYER_CONTROLLER);
 
-	body->setActivationState(DISABLE_DEACTIVATION, true);
+	body->setActivationState(DISABLE_DEACTIVATION);
 }
 
 void CPlayerController::DetachObject() {
 	btRigidBody *body = btRigidBody::upcast(m_pObject->GetObject());
 	body->setAngularFactor(m_saveRot);
-	body->setActivationState(ACTIVE_TAG, true);
+	body->setActivationState(ACTIVE_TAG);
 
 	m_pObject->RemoveCallbackFlags(CALLBACK_IS_PLAYER_CONTROLLER);
 

@@ -10,7 +10,7 @@ enum {
 
 class CSurface {
 	public:
-		CUtlSymbol		m_name;
+		unsigned short  m_name;
 		surfacedata_t	data;
 };
 
@@ -33,6 +33,7 @@ class CPhysicsSurfaceProps : public IPhysicsSurfaceProps {
 		void					SetWorldMaterialIndexTable(int *pMapArray, int mapSize);
 
 		void					GetPhysicsParameters(int surfaceDataIndex, surfacephysicsparams_t *pParamsOut) const;
+		ISaveRestoreOps*		GetMaterialIndexDataOps() const;
 
 	private:
 		int						GetReservedSurfaceIndex(const char *pSurfacePropName) const;
@@ -41,14 +42,17 @@ class CPhysicsSurfaceProps : public IPhysicsSurfaceProps {
 		const CSurface *		GetInternalSurface(int materialIndex) const;
 
 		void					CopyPhysicsProperties(CSurface *pOut, int baseIndex);
+
+		unsigned short			FindString(const char *str) const;
+		unsigned short			AddString(const char *str);
 		bool					AddFileToDatabase(const char *pFilename);
-		int						FindOrAddSound(CUtlSymbol sym);
 
 	private:
-		CUtlSymbolTable *		m_strings;
-		CUtlVector<CUtlSymbol>	m_soundList;
-		CUtlVector<CSurface>	m_props;
-		CUtlVector<CUtlSymbol>	m_fileList;
+		unsigned short m_idCounter;
+		std::unordered_map<unsigned short, std::string> m_strings;
+		std::vector<CSurface>	m_props;
+
+		std::unordered_map<std::string, bool>	m_fileMap;
 };
 
 extern CPhysicsSurfaceProps g_SurfaceDatabase;

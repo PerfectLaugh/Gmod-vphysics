@@ -95,6 +95,7 @@ const char *GetConstraintName(EConstraintType type) {
 * BULLET CONSTRAINTS
 ***********************/
 // TODO: Somebody fill this out!
+/*
 class btPulleyConstraint: public btTypedConstraint {
 	protected:
 		// The 2 points the pulley should run through in world space (such as being attached to a roof)
@@ -153,6 +154,7 @@ class btPulleyConstraint: public btTypedConstraint {
 
 		}
 };
+*/
 
 class btLengthConstraint: public btPoint2PointConstraint {
 	protected:
@@ -394,6 +396,7 @@ class btSpringConstraint : public btPoint2PointConstraint {
 };
 
 // Purpose: Bind IPhysicsUserConstraint to a bullet constraint
+/*
 class btUserConstraint : public btTypedConstraint {
 	public:
 		btUserConstraint(btRigidBody &rbA, btRigidBody &rbB, IPhysicsUserConstraint *pConstraint): btTypedConstraint(CONSTRAINT_TYPE_USER, rbA, rbB) {
@@ -415,17 +418,18 @@ class btUserConstraint : public btTypedConstraint {
 		}
 
 		void getInfo2(btConstraintInfo2 *pInfo) {
-			physconstraintsolveinfo_t *solveinfo = new physconstraintsolveinfo_t[pInfo->m_numConstraintRows];
-			for (int i = 0; i < pInfo->m_numConstraintRows; i++) {
+			const int m_numConstraintRows = 3;
+			physconstraintsolveinfo_t *solveinfo = new physconstraintsolveinfo_t[m_numConstraintRows];
+			for (int i = 0; i < m_numConstraintRows; i++) {
 				solveinfo[i].Defaults();
 			}
 
 			CPhysicsObject *pObjA, *pObjB;
 			pObjA = (CPhysicsObject *)m_rbA.getUserPointer();
 			pObjB = (CPhysicsObject *)m_rbB.getUserPointer();
-			m_pUserConstraint->GetConstraintSolveInfo(pObjA, pObjB, solveinfo, pInfo->m_numConstraintRows, pInfo->fps, pInfo->erp);
+			m_pUserConstraint->GetConstraintSolveInfo(pObjA, pObjB, solveinfo, m_numConstraintRows, pInfo->fps, pInfo->erp);
 
-			for (int i = 0; i < pInfo->m_numConstraintRows; i++) {
+			for (int i = 0; i < m_numConstraintRows; i++) {
 				ConvertDirectionToBull(solveinfo[i].J1linearAxis, *(btVector3 *)&pInfo->m_J1linearAxis[i * pInfo->rowskip]);
 				ConvertDirectionToBull(solveinfo[i].J1angularAxis, *(btVector3 *)&pInfo->m_J1angularAxis[i * pInfo->rowskip]);
 
@@ -460,6 +464,7 @@ class btUserConstraint : public btTypedConstraint {
 	private:
 		IPhysicsUserConstraint *m_pUserConstraint;
 };
+*/
 
 /*********************************
 * CLASS CPhysicsConstraint
@@ -501,8 +506,10 @@ CPhysicsConstraint::CPhysicsConstraint(CPhysicsEnvironment *pEnv, IPhysicsConstr
 CPhysicsConstraint::~CPhysicsConstraint() {
 	if (!m_bRemovedFromEnv) {
 		m_pEnv->GetBulletEnvironment()->removeConstraint(m_pConstraint);
+		/*
 		if (m_type == CONSTRAINT_USER)
 			((btUserConstraint *)m_pConstraint)->getUserConstraint()->ConstraintDestroyed(this);
+		*/
 
 		m_bRemovedFromEnv = true;
 	}
@@ -612,8 +619,10 @@ void CPhysicsConstraint::ObjectDestroyed(CPhysicsObject *pObject) {
 		m_bRemovedFromEnv = true;
 		notify = true;
 
+		/*
 		if (m_type == CONSTRAINT_USER)
 			((btUserConstraint *)m_pConstraint)->getUserConstraint()->ConstraintDestroyed(this);
+		*/
 	}
 
 	// Tell the game that this constraint was broken.
@@ -645,7 +654,7 @@ CPhysicsConstraintGroup::~CPhysicsConstraintGroup() {
 }
 
 void CPhysicsConstraintGroup::Activate() {
-	for (int i = 0; i < m_constraints.Count(); i++) {
+	for (int i = 0; i < m_constraints.size(); i++) {
 		m_constraints[i]->Activate();
 	}
 }
@@ -676,12 +685,17 @@ void CPhysicsConstraintGroup::SolvePenetration(IPhysicsObject *pObj0, IPhysicsOb
 
 // UNEXPOSED
 void CPhysicsConstraintGroup::AddConstraint(CPhysicsConstraint *pConstraint) {
-	m_constraints.AddToTail(pConstraint);
+	m_constraints.push_back(pConstraint);
 }
 
 // UNEXPOSED
 void CPhysicsConstraintGroup::RemoveConstraint(CPhysicsConstraint *pConstraint) {
-	m_constraints.FindAndRemove(pConstraint);
+	auto it = std::find(m_constraints.begin(), m_constraints.end(), pConstraint);
+	if (it == m_constraints.end()) {
+		return;
+	}
+
+	m_constraints.erase(it);
 }
 
 /************************
@@ -806,7 +820,7 @@ CPhysicsConstraint *CreateRagdollConstraint(CPhysicsEnvironment *pEnv, IPhysicsO
 	}
 
 	if (ragdoll.onlyAngularLimits) {
-		pConstraint->setAngularOnly(true);
+		//pConstraint->setAngularOnly(true);
 	}
 	
 	return new CPhysicsConstraint(pEnv, pGroup, pObjRef, pObjAtt, pConstraint, CONSTRAINT_RAGDOLL);
@@ -971,9 +985,13 @@ CPhysicsConstraintGroup *CreateConstraintGroup(CPhysicsEnvironment *pEnv, const 
 CPhysicsConstraint *CreateUserConstraint(CPhysicsEnvironment *pEnv, IPhysicsObject *pReferenceObject, IPhysicsObject *pAttachedObject, IPhysicsConstraintGroup *pGroup, IPhysicsUserConstraint *pUserConstraint) {
 	Assert(pUserConstraint);
 
+	/*
 	btTypedConstraint *constraint = new btUserConstraint(*((CPhysicsObject *)pReferenceObject)->GetObject(), *((CPhysicsObject *)pAttachedObject)->GetObject(), pUserConstraint);
 
 	CPhysicsConstraint *pConstraint = new CPhysicsConstraint(pEnv, pGroup, (CPhysicsObject *)pReferenceObject, (CPhysicsObject *)pAttachedObject, constraint, CONSTRAINT_USER);
 	pConstraint->SetNotifyBroken(false); // Until an entity is hooked up or whatever
 	return pConstraint;
+	*/
+	NOT_IMPLEMENTED
+	return nullptr;
 }

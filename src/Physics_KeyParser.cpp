@@ -424,3 +424,11 @@ void CPhysicsKeyParser::ParseVehicleSteering(vehicle_steeringparams_t &steering,
 			DevWarning("KeyParser ParseVehicleSteering: Unknown Key %s\n", key);
 	}
 }
+
+void CPhysicsKeyParser::ParseCollisionRules(ragdollcollisionrules_t* pRules, IVPhysicsKeyHandler* unknownKeyHandler)
+{
+}
+
+void CPhysicsKeyParser::ParseRagdollAnimatedFriction(ragdollanimatedfriction_t* pFriction, IVPhysicsKeyHandler* unknownKeyHandler)
+{
+}

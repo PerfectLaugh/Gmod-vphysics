@@ -11,15 +11,10 @@
 * CLASS CPhysicsSurfaceProps
 *****************************/
 
-CPhysicsSurfaceProps::CPhysicsSurfaceProps() {
-	m_strings = new CUtlSymbolTable(0, 32, true);
-
-	// HACK: Prevent sound list from starting at index 0 (invalid index)
-	m_soundList.AddToHead();
+CPhysicsSurfaceProps::CPhysicsSurfaceProps() : m_idCounter(1) {
 }
 
 CPhysicsSurfaceProps::~CPhysicsSurfaceProps() {
-	delete m_strings;
 }
 
 int CPhysicsSurfaceProps::ParseSurfaceData(const char *pFilename, const char *pTextfile) {
@@ -39,11 +34,11 @@ int CPhysicsSurfaceProps::ParseSurfaceData(const char *pFilename, const char *pT
 
 		CSurface prop;
 		memset(&prop.data, 0, sizeof(prop.data));
-		prop.m_name = m_strings->AddString(surface->GetName());
+		prop.m_name = AddString(surface->GetName());
 		prop.data.game.material = 0;
 		prop.data.game.maxSpeedFactor = 1.0f;
 		prop.data.game.jumpFactor = 1.0f;
-		prop.data.game.climbable = 0.0f;
+		prop.data.game.climbable = 0;
 
 		int baseMaterial = GetSurfaceIndex("default");
 		if (baseMaterial != -1) {
@@ -71,24 +66,38 @@ int CPhysicsSurfaceProps::ParseSurfaceData(const char *pFilename, const char *pT
 				prop.data.physics.friction = data->GetFloat();
 			else if (!Q_stricmp(key, "dampening"))
 				prop.data.physics.dampening = data->GetFloat();
-			else if (!Q_stricmp(key, "audioreflectivity"))
+			else if (!Q_stricmp(key, "audioReflectivity"))
 				prop.data.audio.reflectivity = data->GetFloat();
-			else if (!Q_stricmp(key, "audiohardnessfactor"))
+			else if (!Q_stricmp(key, "audioHardnessFactor"))
 				prop.data.audio.hardnessFactor = data->GetFloat();
-			else if (!Q_stricmp(key, "audioroughnessfactor"))
+			else if (!Q_stricmp(key, "audioHardMinVelocity"))
+				prop.data.audio.hardVelocityThreshold = data->GetFloat();
+			else if (!Q_stricmp(key, "audioRoughnessFactor"))
 				prop.data.audio.roughnessFactor = data->GetFloat();
 			else if (!Q_stricmp(key, "scrapeRoughThreshold"))
 				prop.data.audio.roughThreshold = data->GetFloat();
 			else if (!Q_stricmp(key, "impactHardThreshold"))
 				prop.data.audio.hardThreshold = data->GetFloat();
-			else if (!Q_stricmp(key, "audioHardMinVelocity"))
-				prop.data.audio.hardVelocityThreshold = data->GetFloat();
+			else if (!Q_stricmp(key, "highPitchOcclusion"))
+				prop.data.audio.highPitchOcclusion = data->GetFloat();
+			else if (!Q_stricmp(key, "midPitchOcclusion"))
+				prop.data.audio.midPitchOcclusion = data->GetFloat();
+			else if (!Q_stricmp(key, "lowPitchOcclusion"))
+				prop.data.audio.lowPitchOcclusion = data->GetFloat();
 			else if (!Q_stricmp(key, "maxspeedfactor"))
 				prop.data.game.maxSpeedFactor = data->GetFloat();
+			else if (!Q_stricmp(key, "hidetargetid"))
+				prop.data.game.hidetargetid = data->GetInt();
+			else if (!Q_stricmp(key, "damageLossPercentPerPenetration"))
+				prop.data.game.damageLossPercentPerPenetration = data->GetFloat();
 			else if (!Q_stricmp(key, "jumpfactor"))
 				prop.data.game.jumpFactor = data->GetFloat();
 			else if (!Q_stricmp(key, "climbable"))
 				prop.data.game.climbable = data->GetInt();
+			else if (!Q_stricmp(key, "damagemodifier"))
+				prop.data.game.damageModifier = data->GetInt();
+			else if (!Q_stricmp(key, "penetrationmodifier"))
+				prop.data.game.penetrationModifier = data->GetInt();
 			else if (!Q_stricmp(key, "gamematerial")) {
 				if (data->GetDataType() == KeyValues::TYPE_STRING && strlen(data->GetString()) == 1) {
 					prop.data.game.material = toupper(data->GetString()[0]);
@@ -96,47 +105,61 @@ int CPhysicsSurfaceProps::ParseSurfaceData(const char *pFilename, const char *pT
 					prop.data.game.material = data->GetInt();
 				}
 			} else if (!Q_stricmp(key, "stepleft")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.stepleft = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.walkStepLeft = sym;
+				prop.data.sounds.runStepLeft = sym;
 			} else if (!Q_stricmp(key, "stepright")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.stepright = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.walkStepRight = sym;
+				prop.data.sounds.runStepRight = sym;
+			} else if (!Q_stricmp(key, "walkLeft")) {
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.walkStepLeft = sym;
+			} else if (!Q_stricmp(key, "walkRight")) {
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.walkStepRight = sym;
+			} else if (!Q_stricmp(key, "runLeft")) {
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.runStepLeft = sym;
+			} else if (!Q_stricmp(key, "runRight")) {
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.runStepRight = sym;
 			} else if (!Q_stricmp(key, "impactsoft")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.impactSoft = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.impactSoft = sym;
 			} else if (!Q_stricmp(key, "impacthard")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.impactHard = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.impactHard = sym;
 			} else if (!Q_stricmp(key, "scrapesmooth")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.scrapeSmooth = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.scrapeSmooth = sym;
 			} else if (!Q_stricmp(key, "scraperough")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.scrapeRough = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.scrapeRough = sym;
 			} else if (!Q_stricmp(key, "bulletimpact")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.bulletImpact = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.bulletImpact = sym;
 			} else if (!Q_stricmp(key, "break")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.breakSound = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.breakSound = sym;
 			} else if (!Q_stricmp(key, "strain")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.strainSound = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.strainSound = sym;
 			} else if (!Q_stricmp(key, "rolling") || !Q_stricmp(key, "roll")) {
-				CUtlSymbol sym = m_strings->AddString(data->GetString());
-				prop.data.sounds.rolling = FindOrAddSound(sym);
+				auto sym = AddString(data->GetString());
+				prop.data.sounds.rolling = sym;
 			} else
 				DevWarning("VPhysics: Surfaceprop \"%s\" has unknown key %s (data: %s)\n", surface->GetName(), key, data->GetString());
 		}
 
-		m_props.AddToTail(prop);
+		m_props.push_back(prop);
 	}
 	surfprops->deleteThis();
 	return 0;
 }
 
 int CPhysicsSurfaceProps::SurfacePropCount() const {
-	return m_props.Count();
+	return m_props.size();
 }
 
 int CPhysicsSurfaceProps::GetSurfaceIndex(const char *pSurfacePropName) const {
@@ -145,9 +168,9 @@ int CPhysicsSurfaceProps::GetSurfaceIndex(const char *pSurfacePropName) const {
 		if (index >= 0) return index;
 	}
 
-	CUtlSymbol id = m_strings->Find(pSurfacePropName);
-	if (id.IsValid()) {
-		for (int i = 0; i < m_props.Size(); i++) {
+	unsigned short id = FindString(pSurfacePropName);
+	if (id != 0) {
+		for (int i = 0; i < m_props.size(); i++) {
 			if (m_props[i].m_name == id)
 				return i;
 		}
@@ -175,18 +198,14 @@ surfacedata_t *CPhysicsSurfaceProps::GetSurfaceData(int surfaceDataIndex) {
 }
 
 const char *CPhysicsSurfaceProps::GetString(unsigned short stringTableIndex) const {
-	if (stringTableIndex < 1 || stringTableIndex >= m_soundList.Count())
-		return NULL;
-
-	CUtlSymbol index = m_soundList[stringTableIndex];
-	return m_strings->String(index);
+	return m_strings.at(stringTableIndex).c_str();
 }
 
 const char *CPhysicsSurfaceProps::GetPropName(int surfaceDataIndex) const {
-	if (surfaceDataIndex < 0 || surfaceDataIndex > m_props.Size())
+	if (surfaceDataIndex < 0 || surfaceDataIndex > m_props.size())
 		return "default";
 
-	return m_strings->String(m_props[surfaceDataIndex].m_name);
+	return m_strings.at(m_props[surfaceDataIndex].m_name).c_str();
 }
 
 void CPhysicsSurfaceProps::SetWorldMaterialIndexTable(int *pMapArray, int mapSize) {
@@ -202,6 +221,13 @@ void CPhysicsSurfaceProps::GetPhysicsParameters(int surfaceDataIndex, surfacephy
 	}
 }
 
+ISaveRestoreOps* CPhysicsSurfaceProps::GetMaterialIndexDataOps() const
+{
+	NOT_IMPLEMENTED
+
+	return nullptr;
+}
+
 int CPhysicsSurfaceProps::GetReservedSurfaceIndex(const char *pSurfacePropName) const {
 	if (!Q_stricmp(pSurfacePropName, "$MATERIAL_INDEX_SHADOW"))
 		return MATERIAL_INDEX_SHADOW;
@@ -210,14 +236,14 @@ int CPhysicsSurfaceProps::GetReservedSurfaceIndex(const char *pSurfacePropName) 
 }
 
 CSurface *CPhysicsSurfaceProps::GetInternalSurface(int materialIndex) {
-	if (materialIndex < 0 || materialIndex > m_props.Size()-1)
+	if (materialIndex < 0 || materialIndex > m_props.size()-1)
 		return NULL;
 
 	return &m_props[materialIndex];
 }
 
 const CSurface *CPhysicsSurfaceProps::GetInternalSurface(int materialIndex) const {
-	if (materialIndex < 0 || materialIndex > m_props.Size()-1)
+	if (materialIndex < 0 || materialIndex > m_props.size()-1)
 		return NULL;
 
 	return &m_props[materialIndex];
@@ -232,22 +258,36 @@ void CPhysicsSurfaceProps::CopyPhysicsProperties(CSurface *pOut, int baseIndex) 
 	}
 }
 
-bool CPhysicsSurfaceProps::AddFileToDatabase(const char *pFilename) {
-	CUtlSymbol id = m_strings->AddString(pFilename);
+unsigned short CPhysicsSurfaceProps::FindString(const char *str) const {
+	for (const auto &x : m_strings) {
+		if (x.second == str) {
+			return x.first;
+		}
+	}
 
-	for (int i = 0; i < m_fileList.Size(); i++)
-		if (m_fileList[i] == id) return false;
-
-	m_fileList.AddToTail(id);
-	return true;
+	return 0;
 }
 
-int CPhysicsSurfaceProps::FindOrAddSound(CUtlSymbol sym) {
-	int id = m_soundList.Find(sym);
-	if (id != -1)
+unsigned short CPhysicsSurfaceProps::AddString(const char *str) {
+	unsigned short id = FindString(str);
+
+	if (id != 0) {
 		return id;
-	else
-		return m_soundList.AddToTail(sym);
+	}
+
+	id = m_idCounter++;
+	m_strings[id] = std::string(str);
+
+	return id;
+}
+
+bool CPhysicsSurfaceProps::AddFileToDatabase(const char *pFilename) {
+	if (m_fileMap.count(pFilename) == 0) {
+		m_fileMap[pFilename] = true;
+		return true;
+	}
+
+	return false;
 }
 
 CPhysicsSurfaceProps g_SurfaceDatabase;

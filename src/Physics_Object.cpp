@@ -85,7 +85,7 @@ CPhysicsObject::~CPhysicsObject() {
 			m_pEnv->DestroyFluidController((IPhysicsFluidController *)m_pFluidController);
 	}
 
-	for (int i = 0; i < m_pEventListeners.Count(); i++) {
+	for (int i = 0; i < m_pEventListeners.size(); i++) {
 		m_pEventListeners[i]->ObjectDestroyed(this);
 	}
 	
@@ -111,7 +111,7 @@ bool CPhysicsObject::IsStatic() const {
 }
 
 bool CPhysicsObject::IsAsleep() const {
-	return m_pObject->getActivationState() == ISLAND_SLEEPING || m_pObject->getActivationState() == DISABLE_SIMULATION;
+	return !m_pObject->isActive();
 }
 
 bool CPhysicsObject::IsFluid() const {
@@ -119,7 +119,7 @@ bool CPhysicsObject::IsFluid() const {
 }
 
 bool CPhysicsObject::IsHinged() const {
-	for (int i = 0; i < m_pConstraintVec.Count(); i++) {
+	for (int i = 0; i < m_pConstraintVec.size(); i++) {
 		if (m_pConstraintVec[i]->GetType() == CONSTRAINT_HINGE)
 			return true;
 	}
@@ -134,7 +134,7 @@ bool CPhysicsObject::IsMoveable() const {
 
 bool CPhysicsObject::IsAttachedToConstraint(bool bExternalOnly) const {
 	// FIXME: What is bExternalOnly?
-	return m_pConstraintVec.Count() > 0;
+	return m_pConstraintVec.size() > 0;
 }
 
 bool CPhysicsObject::IsCollisionEnabled() const {
@@ -158,7 +158,7 @@ bool CPhysicsObject::IsDragEnabled() const {
 }
 
 bool CPhysicsObject::IsMotionEnabled() const {
-	return m_pObject->isMotionEnabled();
+	return m_pObject->isActive();
 }
 
 void CPhysicsObject::EnableCollisions(bool enable) {
@@ -198,12 +198,12 @@ void CPhysicsObject::EnableMotion(bool enable) {
 	if (IsMotionEnabled() == enable || IsStatic()) return;
 
 	if (enable) {
-		m_pObject->setFlags(m_pObject->getFlags() & ~(BT_DISABLE_MOTION));
+		m_pObject->setActivationState(DISABLE_SIMULATION);
 	} else {
 		m_pObject->setLinearVelocity(btVector3(0, 0, 0));
 		m_pObject->setAngularVelocity(btVector3(0, 0, 0));
 
-		m_pObject->setFlags(m_pObject->getFlags() | BT_DISABLE_MOTION);
+		m_pObject->setActivationState(ACTIVE_TAG);
 	}
 }
 
@@ -291,7 +291,7 @@ void CPhysicsObject::RecheckCollisionFilter() {
 	}
 }
 
-void CPhysicsObject::RecheckContactPoints() {
+void CPhysicsObject::RecheckContactPoints(bool bSearchForNewContacts) {
 	return;
 }
 
@@ -412,7 +412,7 @@ void CPhysicsObject::SetMaterialIndex(int materialIndex) {
 		m_materialIndex = materialIndex;
 		m_pObject->setFriction(pSurface->physics.friction);
 		//m_pObject->setRollingFriction(pSurface->physics.friction);
-		m_pObject->setRestitution(min(pSurface->physics.elasticity, 1));
+		m_pObject->setRestitution(MIN(pSurface->physics.elasticity, 1));
 
 		// FIXME: Figure out how to convert damping values.
 
@@ -454,6 +454,16 @@ float CPhysicsObject::GetSphereRadius() const {
 
 	btSphereShape *sphere = (btSphereShape *)shape;
 	return ConvertDistanceToHL(sphere->getRadius());
+}
+
+void CPhysicsObject::SetSphereRadius(float radius)
+{
+	btCollisionShape* shape = m_pObject->getCollisionShape();
+	if (shape->getShapeType() != SPHERE_SHAPE_PROXYTYPE)
+		return;
+
+	btSphereShape* sphere = (btSphereShape*)shape;
+	sphere->setUnscaledRadius(ConvertDistanceToHL(radius));
 }
 
 float CPhysicsObject::GetEnergy() const {
@@ -955,7 +965,7 @@ void CPhysicsObject::BecomeTrigger() {
 
 	m_pEnv->GetBulletEnvironment()->removeRigidBody(m_pObject);
 
-	m_pGhostObject = new btGhostObject;
+	m_pGhostObject = new btGhostObjectWithCallback;
 	m_pGhostObject->setCollisionShape(m_pObject->getCollisionShape());
 	m_pGhostObject->setUserPointer(this);
 	m_pGhostObject->setCollisionFlags(m_pGhostObject->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE | btCollisionObject::CF_STATIC_OBJECT);
@@ -1078,6 +1088,33 @@ void CPhysicsObject::OutputDebugInfo() const {
 	g_PhysicsCollision.OutputDebugInfo((CPhysCollide *)m_pObject->getCollisionShape()->getUserPointer());
 }
 
+void CPhysicsObject::SetUseAlternateGravity(bool bSet)
+{
+	NOT_IMPLEMENTED
+}
+
+void CPhysicsObject::SetCollisionHints(uint32 collisionHints)
+{
+	//NOT_IMPLEMENTED
+}
+
+uint32 CPhysicsObject::GetCollisionHints() const
+{
+	NOT_IMPLEMENTED
+	return uint32();
+}
+
+IPredictedPhysicsObject* CPhysicsObject::GetPredictedInterface(void) const
+{
+	NOT_IMPLEMENTED
+	return nullptr;
+}
+
+void CPhysicsObject::SyncWith(IPhysicsObject* pOther)
+{
+	NOT_IMPLEMENTED
+}
+
 // UNEXPOSED
 void CPhysicsObject::Init(CPhysicsEnvironment *pEnv, btRigidBody *pObject, int materialIndex, objectparams_t *pParams, bool isStatic, bool isSphere) {
 	m_pEnv				= pEnv;
@@ -1111,7 +1148,7 @@ void CPhysicsObject::Init(CPhysicsEnvironment *pEnv, btRigidBody *pObject, int m
 			}
 		}
 
-		m_pObject->setDebugName(m_pName);
+		//m_pObject->setDebugName(m_pName);
 	}
 
 	SetMaterialIndex(materialIndex);
@@ -1151,9 +1188,9 @@ void CPhysicsObject::Init(CPhysicsEnvironment *pEnv, btRigidBody *pObject, int m
 		mins = mins.absolute();
 		maxs = maxs.absolute();
 
-		float maxradius = min(min(maxs.getX(), maxs.getY()), maxs.getZ());
-		float minradius = min(min(mins.getX(), mins.getY()), mins.getZ());
-		float radius = min(maxradius, minradius);
+		float maxradius = MIN(MIN(maxs.getX(), maxs.getY()), maxs.getZ());
+		float minradius = MIN(MIN(mins.getX(), mins.getY()), mins.getZ());
+		float radius = MIN(maxradius, minradius);
 
 		m_pObject->setCcdMotionThreshold((radius / 2) * (radius / 2));
 		m_pObject->setCcdSweptSphereRadius(0.7f * radius);
@@ -1178,34 +1215,40 @@ btRigidBody *CPhysicsObject::GetObject() {
 }
 
 void CPhysicsObject::AttachEventListener(IObjectEventListener *pListener) {
-	m_pEventListeners.AddToTail(pListener);
+	m_pEventListeners.push_back(pListener);
 }
 
 void CPhysicsObject::DetachEventListener(IObjectEventListener *pListener) {
-	int listener;
-	if ((listener = m_pEventListeners.Find(pListener)) != -1) {
-		m_pEventListeners.Remove(listener);
+	auto it = std::find(m_pEventListeners.begin(), m_pEventListeners.end(), pListener);
+	if (it != m_pEventListeners.end()) {
+		m_pEventListeners.erase(it);
 	}
 }
 
 // UNEXPOSED
 // Purpose: Constraints will call this when we're one of the constrained objects.
 void CPhysicsObject::AttachedToConstraint(CPhysicsConstraint *pConstraint) {
-	m_pConstraintVec.AddToTail(pConstraint);
+	m_pConstraintVec.push_back(pConstraint);
 }
 
 // UNEXPOSED
 // Purpose: Constraints will call this when we're one of the constrained objects.
 void CPhysicsObject::DetachedFromConstraint(CPhysicsConstraint *pConstraint) {
-	m_pConstraintVec.FindAndRemove(pConstraint);
+	auto it = std::find(m_pConstraintVec.begin(), m_pConstraintVec.end(), pConstraint);
+	if (it != m_pConstraintVec.end()) {
+		m_pConstraintVec.erase(it);
+	}
 }
 
 void CPhysicsObject::AttachedToController(IController *pController) {
-	m_pControllers.AddToTail(pController);
+	m_pControllers.push_back(pController);
 }
 
 void CPhysicsObject::DetachedFromController(IController *pController) {
-	m_pControllers.FindAndRemove(pController);
+	auto it = std::find(m_pControllers.begin(), m_pControllers.end(), pController);
+	if (it != m_pControllers.end()) {
+		m_pControllers.erase(it);
+	}
 }
 
 // UNEXPOSED

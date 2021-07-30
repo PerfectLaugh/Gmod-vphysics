@@ -111,7 +111,7 @@ class CPhysicsConstraintGroup : public IPhysicsConstraintGroup
 		void	RemoveConstraint(CPhysicsConstraint *pConstraint);
 
 	private:
-		CUtlVector<CPhysicsConstraint *>	m_constraints;
+		std::vector<CPhysicsConstraint *>	m_constraints;
 		constraint_groupparams_t			m_errorParams;
 		CPhysicsEnvironment *				m_pEnvironment;
 };

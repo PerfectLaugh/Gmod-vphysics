@@ -163,6 +163,23 @@ public:
 
 	void									EnableConstraintNotify(bool bEnable);
 	void									DebugCheckContacts();
+
+	void									SetAlternateGravity(const Vector& gravityVector);
+	void									GetAlternateGravity(Vector* pGravityVector) const;
+
+	float									GetDeltaFrameTime(int maxTicks) const;
+	void									ForceObjectsToSleep(IPhysicsObject** pList, int listCount);
+
+	//Network prediction related functions
+	void			SetPredicted(bool bPredicted); //Interaction with this system and it's objects may not always march forward, sometimes it will get/set data in the past.
+	bool			IsPredicted(void);
+	void			SetPredictionCommandNum(int iCommandNum); //what command the client is working on right now
+	int				GetPredictionCommandNum(void);
+	void			DoneReferencingPreviousCommands(int iCommandNum); //won't need data from commands before this one any more
+	void			RestorePredictedSimulation(void); //called to restore results from a previous simulation with the same predicted timestamp set
+
+	// destroy a CPhysCollide used in CreatePolyObject()/CreatePolyObjectStatic() when any owning IPhysicsObject is flushed from the queued deletion list.
+	void			DestroyCollideOnDeadObjectFlush(CPhysCollide*); //should only be used after calling DestroyObject() on all IPhysicsObjects created with it.
 public:
 	// Unexposed functions
 	btSoftRigidDynamicsWorld *				GetBulletEnvironment();
@@ -183,8 +200,6 @@ public:
 	btVector3								GetMaxAngularVelocity() const;
 
 	btThreadPool *							GetSharedThreadPool() const { return m_pSharedThreadPool; }
-
-	void									DoCollisionEvents(float dt);
 
 	void									HandleConstraintBroken(CPhysicsConstraint *pConstraint); // Call this if you're a constraint that was just disabled/broken.
 	void									HandleFluidStartTouch(CPhysicsFluidController *pController, CPhysicsObject *pObject);
@@ -217,12 +232,12 @@ private:
 	btOverlappingPairCallback *				m_pBulletGhostCallback;
 	btSoftBodyWorldInfo						m_softBodyWorldInfo;
 
-	CUtlVector<IPhysicsObject *>			m_objects;
-	CUtlVector<IPhysicsObject *>			m_deadObjects;
+	std::vector<IPhysicsObject *>			m_objects;
+	std::vector<IPhysicsObject *>			m_deadObjects;
 	
-	CUtlVector<IPhysicsSoftBody *>			m_softBodies;
-	CUtlVector<CPhysicsFluidController *>	m_fluids;
-	CUtlVector<IController *>				m_controllers;
+	std::vector<IPhysicsSoftBody *>			m_softBodies;
+	std::vector<CPhysicsFluidController *>	m_fluids;
+	std::vector<IController *>				m_controllers;
 
 	CCollisionEventListener *				m_pCollisionListener;
 	CCollisionSolver *						m_pCollisionSolver;

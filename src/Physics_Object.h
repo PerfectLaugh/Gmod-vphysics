@@ -70,7 +70,7 @@ class CPhysicsObject : public IPhysicsObject32 {
 		void								Sleep();
 
 		void								RecheckCollisionFilter();
-		void								RecheckContactPoints();
+		void								RecheckContactPoints(bool bSearchForNewContacts = false);
 
 		void								SetMass(float mass);
 		float								GetMass() const;
@@ -99,6 +99,7 @@ class CPhysicsObject : public IPhysicsObject32 {
 		void								GetSleepThresholds(float *linVel, float *angVel) const;
 
 		float								GetSphereRadius() const;
+		void								SetSphereRadius(float radius);
 		float								GetEnergy() const;
 		Vector								GetMassCenterLocalSpace() const;
 
@@ -163,6 +164,13 @@ class CPhysicsObject : public IPhysicsObject32 {
 
 		void								OutputDebugInfo() const;
 
+		void								SetUseAlternateGravity(bool bSet);
+		void								SetCollisionHints(uint32 collisionHints);
+		uint32								GetCollisionHints() const;
+
+		IPredictedPhysicsObject*			GetPredictedInterface(void) const;
+		void								SyncWith(IPhysicsObject* pOther);
+
 		// UNEXPOSED FUNCTIONS
 	public:
 		void								Init(CPhysicsEnvironment *pEnv, btRigidBody *pObject, int materialIndex, objectparams_t *pParams, bool isStatic, bool isSphere = false);
@@ -212,7 +220,7 @@ class CPhysicsObject : public IPhysicsObject32 {
 		btRigidBody *						m_pObject;
 		char *								m_pName;
 
-		btGhostObject *						m_pGhostObject; // For triggers
+		btGhostObjectWithCallback *			m_pGhostObject; // For triggers
 		btGhostObjectCallback *				m_pGhostCallback;
 
 		unsigned int						m_materialIndex;
@@ -235,9 +243,9 @@ class CPhysicsObject : public IPhysicsObject32 {
 		CShadowController *					m_pShadow;
 		CPhysicsVehicleController *			m_pVehicleController;
 		CPhysicsFluidController *			m_pFluidController;
-		CUtlVector<CPhysicsConstraint *>	m_pConstraintVec;
-		CUtlVector<IController *>			m_pControllers;
-		CUtlVector<IObjectEventListener *>	m_pEventListeners;
+		std::vector<CPhysicsConstraint *>	m_pConstraintVec;
+		std::vector<IController *>			m_pControllers;
+		std::vector<IObjectEventListener *>	m_pEventListeners;
 
 		int									m_iLastActivationState;
 };

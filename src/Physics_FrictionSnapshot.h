@@ -35,7 +35,7 @@ class CPhysicsFrictionSnapshot : public IPhysicsFrictionSnapshot
 		void								NextFrictionData();
 		float								GetFrictionCoefficient();
 	private:
-		CUtlVector<btPersistentManifold *>	m_manifolds;
+		std::vector<btPersistentManifold *>	m_manifolds;
 		CPhysicsObject *					m_pObject;
 		int									m_iCurManifold;
 		int									m_iCurContactPoint;

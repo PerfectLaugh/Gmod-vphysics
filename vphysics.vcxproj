@@ -16,17 +16,18 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D14B5456-0069-453D-A86A-D5B4CB35C6DD}</ProjectGuid>
     <RootNamespace>vphysics</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -57,7 +58,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)bullet\src;$(SolutionDir)include;$(SolutionDir)thirdparty\sourcesdk\mp\src\public;$(SolutionDir)thirdparty\sourcesdk\mp\src\public\tier0;$(SolutionDir)thirdparty\sourcesdk\mp\src\public\tier1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)bullet3\src;$(SolutionDir)include;$(SolutionDir)thirdparty\sourcesdk\mp\src\public;$(SolutionDir)thirdparty\sourcesdk\mp\src\public\tier0;$(SolutionDir)thirdparty\sourcesdk\mp\src\public\tier1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -108,12 +109,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)bullet\src;$(SolutionDir)include;$(SolutionDir)thirdparty\sourcesdk\mp\src\public;$(SolutionDir)thirdparty\sourcesdk\mp\src\public\tier0;$(SolutionDir)thirdparty\sourcesdk\mp\src\public\tier1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)bullet3\src;$(SolutionDir)include;$(SolutionDir)thirdparty\hl2sdk-csgo\public;$(SolutionDir)thirdparty\hl2sdk-csgo\public\tier0;$(SolutionDir)thirdparty\hl2sdk-csgo\public\tier1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>_WINDLL;_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDLL;_RELEASE;COMPILER_MSVC;COMPILER_MSVC32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <Optimization>MaxSpeed</Optimization>
@@ -121,10 +122,11 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>tier0.lib;tier1.lib;tier2.lib;mathlib.lib;vstdlib.lib;BulletCollision.lib;BulletDynamics.lib;BulletSoftBody.lib;BulletMultithreaded.lib;LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\lib\$(Platform)\$(Configuration)\;$(SolutionDir)thirdparty\sourcesdk\mp\src\lib\public;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>tier0.lib;tier1.lib;tier2.lib;interfaces.lib;mathlib.lib;vstdlib.lib;BulletCollision.lib;BulletDynamics.lib;BulletSoftBody.lib;LinearMath.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\lib\$(Platform)\$(Configuration)\;$(SolutionDir)thirdparty\hl2sdk-csgo\lib\public;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>NotSet</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -159,6 +161,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Bullet.cpp" />
     <ClCompile Include="src\DebugDrawer.cpp" />
     <ClCompile Include="src\Physics.cpp" />
     <ClCompile Include="src\Physics_Collision.cpp" />
@@ -189,7 +192,9 @@
     <ClInclude Include="include\vphysics\constraintsV32.h" />
     <ClInclude Include="include\vphysics\softbodyV32.h" />
     <ClInclude Include="include\vphysics\vehiclesV32.h" />
+    <ClInclude Include="include\vphysics_interface.h" />
     <ClInclude Include="include\vphysics_interfaceV32.h" />
+    <ClInclude Include="src\Bullet.h" />
     <ClInclude Include="src\DebugDrawer.h" />
     <ClInclude Include="src\convert.h" />
     <ClInclude Include="src\phydata.h" />

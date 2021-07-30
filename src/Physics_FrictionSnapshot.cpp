@@ -26,17 +26,17 @@ CPhysicsFrictionSnapshot::CPhysicsFrictionSnapshot(CPhysicsObject *pObject) {
 			continue;
 
 		if (pObjA == pBody || pObjB == pBody) {
-			m_manifolds.AddToTail(pManifold);
+			m_manifolds.push_back(pManifold);
 		}
 	}
 }
 
 CPhysicsFrictionSnapshot::~CPhysicsFrictionSnapshot() {
-	m_manifolds.RemoveAll();
+	m_manifolds.clear();
 }
 
 bool CPhysicsFrictionSnapshot::IsValid() {
-	return m_iCurManifold < m_manifolds.Count();
+	return m_iCurManifold < m_manifolds.size();
 }
 
 IPhysicsObject *CPhysicsFrictionSnapshot::GetObject(int index) {

@@ -19,7 +19,7 @@ class CPhysicsDragController {
 	private:
 		float						m_airDensity;
 
-		CUtlVector<CPhysicsObject *>m_ents;
+		std::vector<CPhysicsObject *> m_ents;
 };
 
 #endif // PHYSICS_DRAGCONTROLLER_H

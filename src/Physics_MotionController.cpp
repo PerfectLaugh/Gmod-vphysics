@@ -24,7 +24,7 @@ CPhysicsMotionController::CPhysicsMotionController(IMotionEvent *pHandler, CPhys
 }
 
 CPhysicsMotionController::~CPhysicsMotionController() {
-	for (int i = m_objectList.Count()-1; i >= 0; i--) {
+	for (int i = m_objectList.size()-1; i >= 0; i--) {
 		DetachObject(m_objectList[i]);
 	}
 }
@@ -32,7 +32,7 @@ CPhysicsMotionController::~CPhysicsMotionController() {
 void CPhysicsMotionController::Tick(float deltaTime) {
 	if (!m_handler) return;
 
-	for (int i = 0; i < m_objectList.Count(); i++) {
+	for (int i = 0; i < m_objectList.size(); i++) {
 		Vector speed;
 		AngularImpulse rot;
 		
@@ -82,7 +82,10 @@ void CPhysicsMotionController::Tick(float deltaTime) {
 }
 
 void CPhysicsMotionController::ObjectDestroyed(CPhysicsObject *pObject) {
-	m_objectList.FindAndRemove(pObject);
+	auto it = std::find(m_objectList.begin(), m_objectList.end(), pObject);
+	if (it != m_objectList.end()) {
+		m_objectList.erase(it);
+	}
 }
 
 void CPhysicsMotionController::SetEventHandler(IMotionEvent *handler) {
@@ -95,43 +98,44 @@ void CPhysicsMotionController::AttachObject(IPhysicsObject *pObject, bool checkI
 
 	CPhysicsObject *pPhys = (CPhysicsObject *)pObject;
 
-	if (m_objectList.Find(pPhys) != -1 && checkIfAlreadyAttached)
+	auto it = std::find(m_objectList.begin(), m_objectList.end(), pPhys);
+	if (it != m_objectList.end() && checkIfAlreadyAttached)
 		return;
 
 	pPhys->AttachedToController(this);
 	pPhys->AttachEventListener(this);
-	m_objectList.AddToTail(pPhys);
+	m_objectList.push_back(pPhys);
 }
 
 void CPhysicsMotionController::DetachObject(IPhysicsObject *pObject) {
 	CPhysicsObject *pPhys = (CPhysicsObject *)pObject;
 
-	int index = m_objectList.Find(pPhys);
-	if (!m_objectList.IsValidIndex(index)) return;
+	auto it = std::find(m_objectList.begin(), m_objectList.end(), pPhys);
+	if (it == m_objectList.end()) return;
 
 	pPhys->DetachedFromController(this);
 	pPhys->DetachEventListener(this);
-	m_objectList.Remove(index);
+	m_objectList.erase(it);
 }
 
 int CPhysicsMotionController::CountObjects() {
-	return m_objectList.Count();
+	return m_objectList.size();
 }
 
 void CPhysicsMotionController::GetObjects(IPhysicsObject **pObjectList) {
 	if (!pObjectList) return;
 
-	for (int i = 0; i < m_objectList.Count(); i++) {
+	for (int i = 0; i < m_objectList.size(); i++) {
 		pObjectList[i] = (IPhysicsObject *)m_objectList[i];
 	}
 }
 
 void CPhysicsMotionController::ClearObjects() {
-	m_objectList.Purge();
+	m_objectList.clear();
 }
 
 void CPhysicsMotionController::WakeObjects() {
-	for (int i = 0; i < m_objectList.Count(); i++) {
+	for (int i = 0; i < m_objectList.size(); i++) {
 		m_objectList[i]->GetObject()->setActivationState(ACTIVE_TAG);
 	}
 }

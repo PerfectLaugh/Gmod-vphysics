@@ -67,7 +67,7 @@ CPhysicsFluidController::CPhysicsFluidController(CPhysicsEnvironment *pEnv, CPhy
 
 	m_pCallback = new CPhysicsFluidCallback(this);
 
-	m_pGhostObject = new btGhostObject;
+	m_pGhostObject = new btGhostObjectWithCallback;
 	m_pGhostObject->setUserPointer(pFluidObject);
 	m_pGhostObject->setCallback(m_pCallback);
 	m_pGhostObject->setCollisionShape(pFluidObject->GetObject()->getCollisionShape());

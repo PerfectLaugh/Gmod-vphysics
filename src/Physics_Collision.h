@@ -125,7 +125,7 @@ class CPhysicsCollision : public IPhysicsCollision32 {
 
 		void					AddConvexToCollide(CPhysCollide *pCollide, const CPhysConvex *pConvex, const matrix3x4_t *xform = NULL);
 		void					RemoveConvexFromCollide(CPhysCollide *pCollide, const CPhysConvex *pConvex);
-		void					RemoveConvexFromCollide(CPhysCollide *pCollide, int index);
+		//void					RemoveConvexFromCollide(CPhysCollide *pCollide, int index);
 
 		CPhysCollide *			CreateCollide(); // Create an empty collision shape (to be used with AddConvexToCollide/RemoveConvexFromCollide)
 		void					DestroyCollide(CPhysCollide *pCollide);
@@ -170,7 +170,7 @@ class CPhysicsCollision : public IPhysicsCollision32 {
 		void					TraceBox(const Ray_t &ray, const CPhysCollide *pCollide, const Vector &collideOrigin, const QAngle &collideAngles, trace_t *ptr);
 		void					TraceBox(const Ray_t &ray, unsigned int contentsMask, IConvexInfo *pConvexInfo, const CPhysCollide *pCollide, const Vector &collideOrigin, const QAngle &collideAngles, trace_t *ptr);
 		void					TraceCollide(const Vector &start, const Vector &end, const CPhysCollide *pSweepCollide, const QAngle &sweepAngles, const CPhysCollide *pCollide, const Vector &collideOrigin, const QAngle &collideAngles, trace_t *ptr);
-		void					TraceConvex(const Vector &start, const Vector &end, const CPhysConvex *pSweepConvex, const QAngle &sweepAngles, const CPhysCollide *pCollide, const Vector &collideOrigin, const QAngle &collideAngles, trace_t *pTrace);
+		//void					TraceConvex(const Vector &start, const Vector &end, const CPhysConvex *pSweepConvex, const QAngle &sweepAngles, const CPhysCollide *pCollide, const Vector &collideOrigin, const QAngle &collideAngles, trace_t *pTrace);
 
 		bool					IsBoxIntersectingCone(const Vector &boxAbsMins, const Vector &boxAbsMaxs, const truncatedcone_t &cone);
 
@@ -178,6 +178,7 @@ class CPhysicsCollision : public IPhysicsCollision32 {
 		void					VCollideUnload(vcollide_t *pVCollide);
 
 		IVPhysicsKeyParser *	VPhysicsKeyParserCreate(const char *pKeyData);
+		IVPhysicsKeyParser*		VPhysicsKeyParserCreate(vcollide_t* pVCollide);
 		void					VPhysicsKeyParserDestroy(IVPhysicsKeyParser *pParser);
 
 		int						CreateDebugMesh(CPhysCollide const *pCollisionModel, Vector **outVerts);
@@ -195,8 +196,17 @@ class CPhysicsCollision : public IPhysicsCollision32 {
 		void					OutputDebugInfo(const CPhysCollide *pCollide);
 		unsigned int			ReadStat(int statID);
 
+		// Get an AABB for an oriented collision model
+		float					CollideGetRadius(const CPhysCollide* pCollide);
+
+		void*					VCollideAllocUserData(vcollide_t* pVCollide, size_t userDataSize);
+		void					VCollideFreeUserData(vcollide_t* pVCollide);
+		void					VCollideCheck(vcollide_t* pVCollide, const char* pName);
+
+		bool					TraceBoxAA(const Ray_t& ray, const CPhysCollide* pCollide, trace_t* ptr);
+
 	private:
-		CUtlVector<bboxcache_t> m_bboxCache;
+		std::vector<bboxcache_t> m_bboxCache;
 		bool					m_enableBBoxCache;
 };
 

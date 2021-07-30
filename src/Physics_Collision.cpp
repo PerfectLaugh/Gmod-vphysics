@@ -792,7 +792,7 @@ int CPhysicsCollision::GetConvexesUsedInCollideable(const CPhysCollide *pCollide
 }
 
 CPhysCollide *CPhysicsCollision::GetCachedBBox(const Vector &mins, const Vector &maxs) {
-	for (int i = 0; i < m_bboxCache.Count(); i++) {
+	for (int i = 0; i < m_bboxCache.size(); i++) {
 		bboxcache_t &cache = m_bboxCache[i];
 
 		if (cache.mins == mins && cache.maxs == maxs)
@@ -803,15 +803,15 @@ CPhysCollide *CPhysicsCollision::GetCachedBBox(const Vector &mins, const Vector 
 }
 
 void CPhysicsCollision::AddCachedBBox(CPhysCollide *pModel, const Vector &mins, const Vector &maxs) {
-	int idx = m_bboxCache.AddToTail();
-	bboxcache_t &cache = m_bboxCache[idx];
+	bboxcache_t cache;
 	cache.pCollide = pModel;
 	cache.mins = mins;
 	cache.maxs = maxs;
+	m_bboxCache.push_back(cache);
 }
 
 bool CPhysicsCollision::IsCachedBBox(CPhysCollide *pModel) {
-	for (int i = 0; i < m_bboxCache.Count(); i++) {
+	for (int i = 0; i < m_bboxCache.size(); i++) {
 		bboxcache_t &cache = m_bboxCache[i];
 
 		if (cache.pCollide == pModel)
@@ -822,12 +822,13 @@ bool CPhysicsCollision::IsCachedBBox(CPhysCollide *pModel) {
 }
 
 void CPhysicsCollision::ClearBBoxCache() {
-	for (int i = m_bboxCache.Count() - 1; i >= 0; i--) {
+	int i = m_bboxCache.size();
+	while (i != 0) {
 		bboxcache_t &cache = m_bboxCache[i];
 
 		// Remove the cache first so DestroyCollide doesn't stop.
 		CPhysCollide *pCollide = cache.pCollide;
-		m_bboxCache.Remove(i);
+		m_bboxCache.pop_back();
 
 		DestroyCollide(pCollide);
 	}
@@ -836,10 +837,10 @@ void CPhysicsCollision::ClearBBoxCache() {
 bool CPhysicsCollision::GetBBoxCacheSize(int *pCachedSize, int *pCachedCount) {
 	// pCachedSize is size in bytes
 	if (pCachedSize)
-		*pCachedSize = m_bboxCache.Size();
+		*pCachedSize = m_bboxCache.size() * sizeof(bboxcache_t);
 
 	if (pCachedCount)
-		*pCachedCount = m_bboxCache.Count();
+		*pCachedCount = m_bboxCache.size();
 
 	// Bool return value is never used.
 	return false;
@@ -939,7 +940,11 @@ class CFilteredRayResultCallback : public btCollisionWorld::ClosestRayResultCall
 			// Test the convex's contents before we do anything else.
 			// The hit convex ID comes in from convex result's local shape info's triangle ID (stupid but whatever)
 			if (m_pConvexInfo && rayResult.m_localShapeInfo && rayResult.m_localShapeInfo->m_triangleIndex >= 0) {
+#ifdef USE_CONVEX_TRIANGLES
+				btConvexTriangleMeshShapeWithData *pShape = (btConvexTriangleMeshShapeWithData *)((btCompoundShape *)m_pShape)->getChildShape(rayResult.m_localShapeInfo->m_triangleIndex);
+#else
 				btCollisionShape *pShape = ((btCompoundShape *)m_pShape)->getChildShape(rayResult.m_localShapeInfo->m_triangleIndex);
+#endif
 				if (pShape) {
 					int contents = m_pConvexInfo->GetContents(pShape->getUserData());
 
@@ -971,7 +976,11 @@ class CFilteredConvexResultCallback : public btCollisionWorld::ClosestConvexResu
 			// Test the convex's contents before we do anything else.
 			// The hit convex ID comes in from convex result's local shape info's triangle ID (stupid but whatever)
 			if (m_pConvexInfo && convexResult.m_localShapeInfo && convexResult.m_localShapeInfo->m_triangleIndex >= 0) {
+#ifdef USE_CONVEX_TRIANGLES
+				btConvexTriangleMeshShapeWithData *pShape = (btConvexTriangleMeshShapeWithData *)((btCompoundShape *)m_pShape)->getChildShape(convexResult.m_localShapeInfo->m_triangleIndex);
+#else
 				btCollisionShape *pShape = ((btCompoundShape *)m_pShape)->getChildShape(convexResult.m_localShapeInfo->m_triangleIndex);
+#endif
 				if (pShape) {
 					int contents = m_pConvexInfo->GetContents(pShape->getUserData());
 
@@ -1096,7 +1105,7 @@ void CPhysicsCollision::TraceBox(const Ray_t &ray, unsigned int contentsMask, IC
 
 				ptr->startsolid = false;
 				ptr->allsolid = false;
-			} else if (cb.m_closestHitFraction == 0.f && cb.m_penetrationDist >= -0.01f) {
+			} else if (cb.m_closestHitFraction == 0.f /* && cb.m_penetrationDist >= -0.01f */) {
 				ConvertDirectionToHL(cb.m_hitNormalWorld, ptr->plane.normal);
 
 				// HACK:
@@ -1280,7 +1289,10 @@ static btConvexShape *LedgeToConvex(const ivpcompactledge_t *ledge) {
 
 		pMesh->addIndexedMesh(mesh, PHY_SHORT); // And add it (with index type of PHY_SHORT)
 
-		btConvexTriangleMeshShape *pShape = new btConvexTriangleMeshShape(pMesh);
+		btConvexTriangleMeshShapeWithData *pShape = new btConvexTriangleMeshShapeWithData(pMesh);
+
+		// Transfer over the ledge's user data (data from Source)
+		pShape->setUserData(ledge->client_data);
 
 		pConvexOut = pShape;
 #else
@@ -1292,7 +1304,7 @@ static btConvexShape *LedgeToConvex(const ivpcompactledge_t *ledge) {
 		// This code will find all unique indexes and add them to an array. This avoids
 		// adding duplicate points to the convex hull shape (triangle edges can share a vertex)
 		// If you find a better way you can replace this!
-		CUtlVector<uint16> indices;
+		std::vector<uint16> indices;
 
 		for (int j = 0; j < ledge->n_triangles; j++) {
 			Assert((uint)j == tris[j].tri_index); // Sanity check
@@ -1300,13 +1312,13 @@ static btConvexShape *LedgeToConvex(const ivpcompactledge_t *ledge) {
 			for (int k = 0; k < 3; k++) {
 				uint16 index = tris[j].c_three_edges[k].start_point_index;
 
-				if (indices.Find(index) == -1) {
-					indices.AddToTail(index);
+				if (std::find(indices.begin(), indices.end(), index) == indices.end()) {
+					indices.push_back(index);
 				}
 			}
 		}
 
-		for (int j = 0; j < indices.Count(); j++) {
+		for (int j = 0; j < indices.size(); j++) {
 			uint16 index = indices[j];
 
 			float *ivpvert = (float *)(vertices + index * 16); // 16 is sizeof(ivp aligned vector)
@@ -1316,17 +1328,17 @@ static btConvexShape *LedgeToConvex(const ivpcompactledge_t *ledge) {
 			pConvex->addPoint(vertex);
 		}
 
-		pConvexOut = pConvex;
-#endif
-
 		// Transfer over the ledge's user data (data from Source)
 		pConvexOut->setUserData(ledge->client_data);
+
+		pConvexOut = pConvex;
+#endif
 	}
 
 	return pConvexOut;
 }
 
-static void GetAllMOPPLedges(const ivpcompactmopp_t *mopp, CUtlVector<const ivpcompactledge_t *> *vecOut) {
+static void GetAllMOPPLedges(const ivpcompactmopp_t *mopp, std::vector<const ivpcompactledge_t *> &vecOut) {
 	char *ledge = (char *)mopp + mopp->offset_ledges + mopp->size_convex_hull;
 	char *points = ledge + ((ivpcompactledge_t *)ledge)->c_point_offset;
 
@@ -1334,7 +1346,7 @@ static void GetAllMOPPLedges(const ivpcompactmopp_t *mopp, CUtlVector<const ivpc
 	while (ledge < points) {
 		Assert(((ivpcompactledge_t *)ledge)->for_future_use == 0); // Validity check
 
-		vecOut->AddToTail((ivpcompactledge_t *)ledge);
+		vecOut.push_back((ivpcompactledge_t *)ledge);
 		ledge += ((ivpcompactledge_t *)ledge)->size_div_16 * 16;
 	}
 }
@@ -1349,13 +1361,13 @@ static CPhysCollide *LoadMOPP(void *pSolid, bool swap) {
 		return NULL;
 	}
 
-	CUtlVector<const ivpcompactledge_t *> ledges;
-	GetAllMOPPLedges(ivpmopp, &ledges);
-	DevMsg("MOPP with %d ledges\n", ledges.Count());
+	std::vector<const ivpcompactledge_t *> ledges;
+	GetAllMOPPLedges(ivpmopp, ledges);
+	DevMsg("MOPP with %d ledges\n", ledges.size());
 
 	btCompoundShape *pCompound = NULL;
 	
-	if (ledges.Count() == 1)
+	if (ledges.size() == 1)
 		pCompound = new btCompoundShape(false); // Pointless for an AABB tree if it's just one convex
 	else
 		pCompound = new btCompoundShape();
@@ -1368,7 +1380,7 @@ static CPhysCollide *LoadMOPP(void *pSolid, bool swap) {
 
 	pCompound->setMargin(COLLISION_MARGIN);
 
-	for (int i = 0; i < ledges.Count(); i++) {
+	for (int i = 0; i < ledges.size(); i++) {
 		const ivpcompactledge_t *ledge = ledges[i];
 
 		btTransform offsetTrans(btMatrix3x3::getIdentity(), -pCollide->GetMassCenter());
@@ -1379,11 +1391,11 @@ static CPhysCollide *LoadMOPP(void *pSolid, bool swap) {
 }
 
 // Purpose: Recursive function that goes through the entire ledge tree and adds ledges
-static void GetAllIVPSLedges(const ivpcompactledgenode_t *node, CUtlVector<const ivpcompactledge_t *> *vecOut) {
-	if (!node || !vecOut) return;
+static void GetAllIVPSLedges(const ivpcompactledgenode_t *node, std::vector<const ivpcompactledge_t *> &vecOut) {
+	if (!node) return;
 
 	if (node->IsTerminal()) {
-		vecOut->AddToTail(node->GetCompactLedge());
+		vecOut.push_back(node->GetCompactLedge());
 	} else {
 		const ivpcompactledgenode_t *rs = node->GetRightSon();
 		const ivpcompactledgenode_t *ls = node->GetLeftSon();
@@ -1402,12 +1414,12 @@ static CPhysCollide *LoadIVPS(void *pSolid, bool swap) {
 	}
 
 	// Add all of the ledges up
-	CUtlVector<const ivpcompactledge_t *> ledges;
-	GetAllIVPSLedges((const ivpcompactledgenode_t *)((char *)ivpsurface + ivpsurface->offset_ledgetree_root), &ledges);
+	std::vector<const ivpcompactledge_t *> ledges;
+	GetAllIVPSLedges((const ivpcompactledgenode_t *)((char *)ivpsurface + ivpsurface->offset_ledgetree_root), ledges);
 
 	btCompoundShape *pCompound = NULL;
 	
-	if (ledges.Count() == 1)
+	if (ledges.size() == 1)
 		pCompound = new btCompoundShape(false); // Pointless for an AABB tree if it's just one convex
 	else
 		pCompound = new btCompoundShape();
@@ -1423,7 +1435,7 @@ static CPhysCollide *LoadIVPS(void *pSolid, bool swap) {
 
 	pCompound->setMargin(COLLISION_MARGIN);
 
-	for (int i = 0; i < ledges.Count(); i++) {
+	for (int i = 0; i < ledges.size(); i++) {
 		const ivpcompactledge_t *ledge = ledges[i];
 
 		btTransform offsetTrans(btMatrix3x3::getIdentity(), -pCollide->GetMassCenter());
@@ -1514,6 +1526,10 @@ void CPhysicsCollision::VCollideUnload(vcollide_t *pVCollide) {
 
 IVPhysicsKeyParser *CPhysicsCollision::VPhysicsKeyParserCreate(const char *pKeyData) {
 	return new CPhysicsKeyParser(pKeyData);
+}
+
+IVPhysicsKeyParser* CPhysicsCollision::VPhysicsKeyParserCreate(vcollide_t* pVCollide) {
+	return new CPhysicsKeyParser(pVCollide->pKeyValues);
 }
 
 void CPhysicsCollision::VPhysicsKeyParserDestroy(IVPhysicsKeyParser *pParser) {
@@ -1663,6 +1679,35 @@ void CPhysicsCollision::OutputDebugInfo(const CPhysCollide *pCollide) {
 unsigned int CPhysicsCollision::ReadStat(int statID) {
 	NOT_IMPLEMENTED
 	return 0;
+}
+
+float CPhysicsCollision::CollideGetRadius(const CPhysCollide* pCollide)
+{
+	NOT_IMPLEMENTED
+	return 0.0f;
+}
+
+void* CPhysicsCollision::VCollideAllocUserData(vcollide_t* pVCollide, size_t userDataSize)
+{
+	NOT_IMPLEMENTED
+	return nullptr;
+}
+
+void CPhysicsCollision::VCollideFreeUserData(vcollide_t* pVCollide)
+{
+	NOT_IMPLEMENTED
+}
+
+void CPhysicsCollision::VCollideCheck(vcollide_t* pVCollide, const char* pName)
+{
+	NOT_IMPLEMENTED
+}
+
+bool CPhysicsCollision::TraceBoxAA(const Ray_t& ray, const CPhysCollide* pCollide, trace_t* ptr)
+{
+	NOT_IMPLEMENTED
+
+	return false;
 }
 
 CPhysicsCollision g_PhysicsCollision;

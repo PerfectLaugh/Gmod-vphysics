@@ -80,6 +80,9 @@
     <ClCompile Include="src\Physics_VehicleAirboat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Bullet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\convert.h">
@@ -170,6 +173,12 @@
       <Filter>Header Files\public</Filter>
     </ClInclude>
     <ClInclude Include="include\vphysics\softbodyV32.h">
+      <Filter>Header Files\public</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Bullet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vphysics_interface.h">
       <Filter>Header Files\public</Filter>
     </ClInclude>
   </ItemGroup>
