@@ -1,6 +1,6 @@
 [submodule "qhull"]
 	path = thirdparty/qhull
-	url = https://github.com/manctl/qhull.git
+	url = https://github.com/qhull/qhull.git
 [submodule "thirdparty/gmmodulebase"]
 	path = thirdparty/gmmodulebase
 	url = https://github.com/garrynewman/gmod-module-base.git
