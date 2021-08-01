@@ -42,7 +42,7 @@ CC = /usr/bin/g++
 LINK = /usr/bin/g++
 ARCH = i386
 DEFINES = -DCOMPILER_GCC -DLINUX -D__LINUX__ -D_LINUX -D__linux__ -DPOSIX -DGNUC -DARCH=$(ARCH) -Dstricmp=strcasecmp -D_stricmp=strcasecmp -D_snprintf=snprintf -D_vsnprintf=vsnprintf -DHAVE_STDINT_H -D_FILE_OFFSET_BITS=64 -DNETWORK_VARS_ENABLED -D_GLIBCXX_USE_CXX11_ABI=0
-CFLAGS = $(INCLUDES) $(DEFINES) -fpermissive -fPIC -w -msse2 -mfpmath=sse -m32 -march=$(ARCH) -g -std=c++14 -ffunction-sections -fdata-sections
+CFLAGS = $(INCLUDES) $(DEFINES) -fpermissive -fPIC -w -msse2 -mfpmath=sse -m32 -march=$(ARCH) -g -std=c++14
 LFLAGS = -m32 $(LIBDIRS) $(LIBS) -shared -lm -latomic -static-libgcc
 
 ifeq ($(CONFIGURATION), debug)

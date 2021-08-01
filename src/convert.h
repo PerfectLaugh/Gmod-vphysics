@@ -5,7 +5,7 @@
 #define HL2BULL_INSQR_PER_METERSQR (1.f / (HL2BULL_FACTOR*HL2BULL_FACTOR))
 
 #define BULL2HL(x) (float)((x) * (1.0f/HL2BULL_FACTOR))
-#define HL2BULL(x) (float)((x) * HL2BULL_FACTOR)
+#define HL2BULL(x) (double)((x) * HL2BULL_FACTOR)
 
 #ifdef _MSC_VER
 	// Conversion from x to x, possible loss of data

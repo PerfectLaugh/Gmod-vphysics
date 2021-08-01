@@ -18,9 +18,7 @@
 #include <vector>
 #include <unordered_map>
 
-#if defined(_WIN32)
-	//#define DEBUG_DRAW 1
-#endif
+//#define DEBUG_DRAW 1
 
 // Probably shouldn't be using defines for these.
 #define SLEEP_LINEAR_THRESHOLD 0.15 // m/s

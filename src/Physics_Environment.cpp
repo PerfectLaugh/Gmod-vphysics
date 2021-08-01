@@ -39,7 +39,7 @@
 #endif
 
 #ifdef USE_PARALLEL_SOLVER
-	#include "BulletMultiThreaded/btParallelConstraintSolver.h"
+	//#include "BulletMultiThreaded/btParallelConstraintSolver.h"
 #endif
 
 #include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
@@ -230,9 +230,8 @@ class CObjectTracker {
 			btCollisionObjectArray &colObjArray = pBulletEnv->getCollisionObjectArray();
 			for (int i = 0; i < colObjArray.size(); i++) {
 				CPhysicsObject *pObj = (CPhysicsObject *)colObjArray[i]->getUserPointer();
-				if (!pObj) continue; // Internal object that the game doesn't need to know about
-
-				Assert(*(char *)pObj != 0xDD); // Make sure the object isn't deleted (only works in debug builds)
+				if (!pObj)
+					continue;
  
 				// Don't add objects marked for delete
 				if (pObj->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE) {
@@ -242,36 +241,32 @@ class CObjectTracker {
 				if (colObjArray[i]->getActivationState() != pObj->GetLastActivationState()) {
 					int newState = colObjArray[i]->getActivationState();
 
-					// Not a state we want to track.
-					if (newState == WANTS_DEACTIVATION)
+					if (!pObj->UpdateSleepState(newState)) {
 						continue;
-
-					if (m_pObjEvents) {
-						switch (newState) {
-							// FIXME: Objects may call objectwake twice if they go from disable_deactivation -> active_tag
-							case DISABLE_DEACTIVATION:
-							case ACTIVE_TAG:
-								m_pObjEvents->ObjectWake(pObj);
-								break;
-							case ISLAND_SLEEPING: // Don't call ObjectSleep on DISABLE_SIMULATION on purpose.
-								m_pObjEvents->ObjectSleep(pObj);
-								break;
-						}
 					}
 
 					auto it = std::find(m_activeObjects.begin(), m_activeObjects.end(), pObj);
-					switch (newState) {
-						case DISABLE_DEACTIVATION:
-						case ACTIVE_TAG:
+					switch (pObj->GetSleepState()) {
+						case CPhysicsObject::SleepState::Awake:
 							// Don't add the object twice!
 							if (it == m_activeObjects.end())
 								m_activeObjects.push_back(pObj);
-
 							break;
-						case DISABLE_SIMULATION:
-						case ISLAND_SLEEPING:
+						case CPhysicsObject::SleepState::Sleep:
 							ObjectRemoved(pObj);
 							break;
+					}
+
+					if (m_pObjEvents) {
+						switch (pObj->GetSleepState()) {
+							// FIXME: Objects may call objectwake twice if they go from disable_deactivation -> active_tag
+							case CPhysicsObject::SleepState::Awake:
+								m_pObjEvents->ObjectWake(pObj);
+								break;
+							case CPhysicsObject::SleepState::Sleep:
+								m_pObjEvents->ObjectSleep(pObj);
+								break;
+						}
 					}
 
 					pObj->SetLastActivationState(newState);
@@ -345,11 +340,6 @@ class CCollisionEventListener {
 				return;
 			}
 
-			if (!(physObA->GetCallbackFlags() & CALLBACK_GLOBAL_FRICTION) || !(physObB->GetCallbackFlags() & CALLBACK_GLOBAL_FRICTION)) {
-				dispatcher.defaultNearCallback(collisionPair, dispatcher, dispatchInfo);
-				return;
-			}
-
 			if (dispatcher.needsCollision(colObj0, colObj1))
 			{
 				btCollisionObjectWrapper obj0Wrap(0, colObj0->getCollisionShape(), colObj0, colObj0->getWorldTransform(), -1, -1);
@@ -374,7 +364,6 @@ class CCollisionEventListener {
 						auto manifold = contactPointResult.getPersistentManifold();
 
 						if (manifold == nullptr) {
-							dispatcher.defaultNearCallback(collisionPair, dispatcher, dispatchInfo);
 							return;
 						}
 
@@ -392,7 +381,6 @@ class CCollisionEventListener {
 							if (m_pCallback) {
 								auto& manPoint = manifold->getContactPoint(i);
 								postSolveContact(colObj0, colObj1, &manPoint);
-
 								friction(colObj0, colObj1, &manPoint);
 							}
 						}
@@ -419,21 +407,20 @@ class CCollisionEventListener {
 			if (pObj0->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE || pObj1->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE)
 				return;
 
-			const btRigidBody *rb0 = btRigidBody::upcast(colObj0);
-			const btRigidBody *rb1 = btRigidBody::upcast(colObj1);
-			if (rb0 == nullptr || rb1 == nullptr) {
-				return;
-			}
+			auto rb0 = btRigidBody::upcast(colObj0);
+			auto rb1 = btRigidBody::upcast(colObj1);
 
 			unsigned int flags0 = pObj0->GetCallbackFlags();
 			unsigned int flags1 = pObj1->GetCallbackFlags();
 
+			//Msg("preCollision: %f %f\n", cp->getAppliedImpulse(), m_tmpEvent.collisionSpeed);
+
 			// Clear it
 			memset(&m_tmpEvent, 0, sizeof(m_tmpEvent));
-			m_tmpEvent.collisionSpeed = 0.f; // Invalid pre-collision
-			m_tmpEvent.deltaCollisionTime = 10.f; // FIXME: Find a way to track the real delta time
-			m_tmpEvent.isCollision = (flags0 & flags1 & CALLBACK_GLOBAL_COLLISION); // False when either one of the objects don't have CALLBACK_GLOBAL_COLLISION
-			m_tmpEvent.isShadowCollision = (flags0 ^ flags1) & CALLBACK_SHADOW_COLLISION; // True when only one of the objects is a shadow (if both are shadow, it's handled by the game)
+			m_tmpEvent.collisionSpeed = 0.0; // Invalid pre-collision
+			m_tmpEvent.deltaCollisionTime = 1.0; // FIXME: Find a way to track the real delta time
+			m_tmpEvent.isCollision = (flags0 & flags1 & CALLBACK_GLOBAL_COLLISION) ? true : false; // False when either one of the objects don't have CALLBACK_GLOBAL_COLLISION
+			m_tmpEvent.isShadowCollision = ((flags0 ^ flags1) & CALLBACK_SHADOW_COLLISION) ? true : false; // True when only one of the objects is a shadow (if both are shadow, it's handled by the game)
 
 			m_tmpEvent.pObjects[0] = pObj0;
 			m_tmpEvent.pObjects[1] = pObj1;	
@@ -449,40 +436,9 @@ class CCollisionEventListener {
 			CPhysicsCollisionData data(cp);
 			m_tmpEvent.pInternalData = &data;
 
-			/*
-			// Give the game its stupid velocities
-			if (body0->m_originalBody) {
-				m_tmpVelocities[0] = body0->m_originalBody->getLinearVelocity();
-				m_tmpAngVelocities[0] = body0->m_originalBody->getAngularVelocity();
-
-				body0->m_originalBody->setLinearVelocity(m_tmpVelocities[0] + body0->internalGetDeltaLinearVelocity());
-				body0->m_originalBody->setAngularVelocity(m_tmpAngVelocities[0] + body0->internalGetDeltaAngularVelocity());
-			}
-			if (body1->m_originalBody) {
-				m_tmpVelocities[1] = body1->m_originalBody->getLinearVelocity();
-				m_tmpAngVelocities[1] = body1->m_originalBody->getAngularVelocity();
-
-				body1->m_originalBody->setLinearVelocity(m_tmpVelocities[1] + body1->internalGetDeltaLinearVelocity());
-				body1->m_originalBody->setAngularVelocity(m_tmpAngVelocities[1] + body1->internalGetDeltaAngularVelocity());
-			}
-			*/
-
 			if (m_pCallback) {
 				m_pCallback->PreCollision(&m_tmpEvent);
 			}
-
-			// Restore the velocities
-			// UNDONE: No need, postSolveContact will do this.
-			/*
-			if (body0->m_originalBody) {
-				body0->m_originalBody->setLinearVelocity(m_tmpVelocities[0]);
-				body0->m_originalBody->setAngularVelocity(m_tmpAngVelocities[0]);
-			}
-			if (body1->m_originalBody) {
-				body1->m_originalBody->setLinearVelocity(m_tmpVelocities[1]);
-				body1->m_originalBody->setAngularVelocity(m_tmpAngVelocities[1]);
-			}
-			*/
 		}
 
 		// TODO: Optimize this, heavily!
@@ -494,21 +450,33 @@ class CCollisionEventListener {
 			if (pObj0->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE || pObj1->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE)
 				return;
 
-			const btRigidBody *rb0 = btRigidBody::upcast(colObj0);
-			const btRigidBody *rb1 = btRigidBody::upcast(colObj1);
-			if (rb0 == nullptr || rb1 == nullptr) {
-				return;
+			if (!m_tmpEvent.isCollision && !m_tmpEvent.isShadowCollision) return;
+
+			auto rb0 = btRigidBody::upcast(colObj0);
+			auto rb1 = btRigidBody::upcast(colObj1);
+
+			auto invMass0 = rb0->getInvMass();
+			auto invMass1 = rb1->getInvMass();
+
+			float combinedMass = 0.0;
+			if (invMass0 != 0.0) {
+				combinedMass += 1.0 / invMass0;
+			}
+			if (invMass1 != 0.0) {
+				combinedMass += 1.0 / invMass1;
 			}
 
-			//unsigned int flags0 = pObj0->GetCallbackFlags();
-			//unsigned int flags1 = pObj1->GetCallbackFlags();
-
-			btScalar combinedInvMass = rb0->getInvMass() + rb1->getInvMass();
-			m_tmpEvent.collisionSpeed = BULL2HL(cp->m_appliedImpulse * combinedInvMass); // Speed of body 1 rel to body 2 on axis of constraint normal
+			if (combinedMass != 0.0) {
+				m_tmpEvent.collisionSpeed = ConvertForceImpulseToHL(abs(cp->getAppliedImpulse())) / combinedMass; // Speed of body 1 rel to body 2 on axis of constraint 
+				//Msg("postCollision: %f %f\n", cp->getAppliedImpulse(), m_tmpEvent.collisionSpeed);
+			}
+			else {
+				m_tmpEvent.collisionSpeed = 0.0;
+			}
 
 			// FIXME: Find a way to track the real delta time
 			// IVP tracks this delta time between object pairs
-			m_tmpEvent.deltaCollisionTime = 10.f;
+			m_tmpEvent.deltaCollisionTime = 1.0;
 			/*
 			m_tmpEvent.isCollision = (flags0 & flags1 & CALLBACK_GLOBAL_COLLISION); // False when either one of the objects don't have CALLBACK_GLOBAL_COLLISION
 			m_tmpEvent.isShadowCollision = (flags0 ^ flags1) & CALLBACK_SHADOW_COLLISION; // True when only one of the objects is a shadow
@@ -519,68 +487,44 @@ class CCollisionEventListener {
 			m_tmpEvent.surfaceProps[1] = pObj1 ? pObj1->GetMaterialIndex() : 0;
 			*/
 
-			if (!m_tmpEvent.isCollision && !m_tmpEvent.isShadowCollision) return;
-
 			CPhysicsCollisionData data(cp);
 			m_tmpEvent.pInternalData = &data;
-
-			/*
-			// Give the game its stupid velocities
-			if (body0->m_originalBody) {
-				body0->m_originalBody->setLinearVelocity(m_tmpVelocities[0] + body0->internalGetDeltaLinearVelocity());
-				body0->m_originalBody->setAngularVelocity(m_tmpAngVelocities[0] + body0->internalGetDeltaAngularVelocity());
-			}
-			if (body1->m_originalBody) {
-				body1->m_originalBody->setLinearVelocity(m_tmpVelocities[1] + body1->internalGetDeltaLinearVelocity());
-				body1->m_originalBody->setAngularVelocity(m_tmpAngVelocities[1] + body1->internalGetDeltaAngularVelocity());
-			}
-			*/
 
 			if (m_pCallback) {
 				m_pCallback->PostCollision(&m_tmpEvent);
 			}
-
-			/*
-			// Restore the velocities
-			if (body0->m_originalBody) {
-				body0->m_originalBody->setLinearVelocity(m_tmpVelocities[0]);
-				body0->m_originalBody->setAngularVelocity(m_tmpAngVelocities[0]);
-			}
-			if (body1->m_originalBody) {
-				body1->m_originalBody->setLinearVelocity(m_tmpVelocities[1]);
-				body1->m_originalBody->setAngularVelocity(m_tmpAngVelocities[1]);
-			}
-			*/
 		}
 
 		void friction(const btCollisionObject *colObj0, const btCollisionObject *colObj1, btManifoldPoint *cp) {
-			// FIXME: Problem with bullet code, only one solver body created for static objects!
-			// There could be more than one static object created by us!
 			CPhysicsObject *pObj0 = (CPhysicsObject *)colObj0->getUserPointer();
 			CPhysicsObject *pObj1 = (CPhysicsObject *)colObj1->getUserPointer();
-
-			const btRigidBody *rb0 = btRigidBody::upcast(colObj0);
-			const btRigidBody *rb1 = btRigidBody::upcast(colObj1);
-			if (rb0 == nullptr || rb1 == nullptr) {
+			if (pObj0->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE || pObj1->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE)
 				return;
-			}
+			
+			if (!(pObj1->GetCallbackFlags() & CALLBACK_GLOBAL_FRICTION))
+				return;
 
-			unsigned int flags0 = pObj0->GetCallbackFlags();
-			unsigned int flags1 = pObj1->GetCallbackFlags();
+			// FRICTION CALLBACK
+			// FIXME: We need to find the energy used by the friction! Bullet doesn't provide this in the manifold point.
+			// This may not be the proper variable but whatever, as of now it works.
 
-			// Don't do the callback if it's disabled on either object
-			if (!(flags0 & flags1 & CALLBACK_GLOBAL_FRICTION)) return;
+			auto rb1 = btRigidBody::upcast(colObj1);
+			auto invMass = rb1->getInvMass();
 
-			// Calculate the energy consumed
-			float energy = cp->getAppliedImpulse();
-			energy *= rb0->getInvMass(); // Get just the velocity
-			energy *= energy; // Square it
-			energy *= SAFE_DIVIDE(.5, rb0->getInvMass()); // Add back the mass (1/2*mv^2)
+			//Msg("friction: %f %f\n", cp->getAppliedImpulse(), invMass);
 
-			CPhysicsCollisionData data(cp);
+			float energy = abs(cp->getAppliedImpulse() * invMass);
 
-			if (m_pCallback) {
-				m_pCallback->Friction(pObj0, ConvertEnergyToHL(energy), pObj0->GetMaterialIndex(), pObj1->GetMaterialIndex(), &data);
+			if (energy > 0.05f) {
+				CPhysicsCollisionData data(cp);
+
+				if (m_pCallback) {
+					m_pCallback->Friction(pObj1,
+						ConvertEnergyToHL(energy),
+						pObj1->GetMaterialIndex(),
+						pObj0->GetMaterialIndex(),
+						&data);
+				}
 			}
 		}
 
@@ -592,9 +536,6 @@ class CCollisionEventListener {
 		CPhysicsEnvironment *m_pEnv;
 		IPhysicsCollisionEvent *m_pCallback;
 
-		// Temp. variables saved between Pre/PostCollision
-		btVector3 m_tmpVelocities[2];
-		btVector3 m_tmpAngVelocities[2];
 		vcollisionevent_t m_tmpEvent;
 };
 
@@ -702,7 +643,7 @@ CPhysicsEnvironment::CPhysicsEnvironment() {
 
 	m_pBulletGhostCallback = new btGhostPairCallback;
 	m_pCollisionSolver = new CCollisionSolver(this);
-	m_pBulletEnvironment->getPairCache()->setOverlapFilterCallback(m_pCollisionSolver);
+	m_pBulletBroadphase->getOverlappingPairCache()->setOverlapFilterCallback(m_pCollisionSolver);
 	m_pBulletBroadphase->getOverlappingPairCache()->setInternalGhostPairCallback(m_pBulletGhostCallback);
 
 	m_pDeleteQueue = new CDeleteQueue;
@@ -721,9 +662,11 @@ CPhysicsEnvironment::CPhysicsEnvironment() {
 	m_pBulletEnvironment->getSolverInfo().m_solverMode |= SOLVER_SIMD;
 
 	// TODO: Threads solve any oversized batches (>32?), otherwise solving done on main thread.
+	/*
 	m_pBulletEnvironment->getSolverInfo().m_minimumSolverBatchSize = 128; // Combine islands up to this many constraints
 	m_pBulletEnvironment->getDispatchInfo().m_allowedCcdPenetration = 0.0001f;
 	m_pBulletEnvironment->setApplySpeculativeContactRestitution(true);
+	*/
 	//m_pBulletEnvironment->getDispatchInfo().m_dispatchFunc = btDispatcherInfo::DISPATCH_CONTINUOUS;
 
 	//m_simPSIs = 0;
@@ -781,6 +724,7 @@ void CPhysicsEnvironment::ChangeThreadCount(int newThreadCount) {
 }
 
 // UNEXPOSED
+
 void CPhysicsEnvironment::TickCallback(btDynamicsWorld *world, btScalar timeStep) {
 	if (!world) return;
 
@@ -1426,7 +1370,7 @@ void CPhysicsEnvironment::GetAlternateGravity(Vector* pGravityVector) const
 
 float CPhysicsEnvironment::GetDeltaFrameTime(int maxTicks) const
 {
-	NOT_IMPLEMENTED
+	//NOT_IMPLEMENTED
 	return 0.0f;
 }
 
@@ -1442,30 +1386,30 @@ void CPhysicsEnvironment::SetPredicted(bool bPredicted)
 
 bool CPhysicsEnvironment::IsPredicted(void)
 {
-	NOT_IMPLEMENTED
+	//NOT_IMPLEMENTED
 
 	return false;
 }
 
 void CPhysicsEnvironment::SetPredictionCommandNum(int iCommandNum)
 {
-	NOT_IMPLEMENTED
+	//NOT_IMPLEMENTED
 }
 
 int CPhysicsEnvironment::GetPredictionCommandNum(void)
 {
-	NOT_IMPLEMENTED
+	//NOT_IMPLEMENTED
 	return 0;
 }
 
 void CPhysicsEnvironment::DoneReferencingPreviousCommands(int iCommandNum)
 {
-	NOT_IMPLEMENTED
+	//NOT_IMPLEMENTED
 }
 
 void CPhysicsEnvironment::RestorePredictedSimulation(void)
 {
-	NOT_IMPLEMENTED
+	//NOT_IMPLEMENTED
 }
 
 void CPhysicsEnvironment::DestroyCollideOnDeadObjectFlush(CPhysCollide*)
@@ -1512,8 +1456,9 @@ void CPhysicsEnvironment::BulletTick(btScalar dt) {
 		CleanupDeleteList();
 	}
 
-	if (m_pCollisionEvent)
+	if (m_pCollisionEvent) {
 		m_pCollisionEvent->PostSimulationFrame();
+	}
 
 	m_inSimulation = true;
 	m_curSubStep++;
@@ -1566,14 +1511,18 @@ void CPhysicsEnvironment::HandleFluidEndTouch(CPhysicsFluidController *pControll
 void CPhysicsEnvironment::HandleObjectEnteredTrigger(CPhysicsObject *pTrigger, CPhysicsObject *pObject) {
 	if (pObject->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE) return;
 
-	if (m_pCollisionEvent)
-		m_pCollisionEvent->ObjectEnterTrigger(pTrigger, pObject);
+	if (m_pCollisionEvent) {
+		// Doesn't work
+		//m_pCollisionEvent->ObjectEnterTrigger(pTrigger, pObject);
+	}
 }
 
 // UNEXPOSED
 void CPhysicsEnvironment::HandleObjectExitedTrigger(CPhysicsObject *pTrigger, CPhysicsObject *pObject) {
 	if (pObject->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE) return;
 
-	if (m_pCollisionEvent)
-		m_pCollisionEvent->ObjectLeaveTrigger(pTrigger, pObject);
+	if (m_pCollisionEvent) {
+		// Doesn't work
+		//m_pCollisionEvent->ObjectLeaveTrigger(pTrigger, pObject);
+	}
 }

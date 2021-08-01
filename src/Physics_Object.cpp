@@ -65,11 +65,14 @@ CPhysicsObject::CPhysicsObject() {
 	m_gameFlags = 0;
 	m_callbacks = 0;
 	m_materialIndex = 0;
+	m_collisionHints = 0;
+
+	m_sleepState = SleepState::Sleep;
 
 	m_pObject = NULL;
 	m_pGhostObject = NULL;
 	m_pGhostCallback = NULL;
-	m_pName = "UNINITIALIZED";
+	m_pName = NULL;
 
 	m_bRemoving = false;
 }
@@ -158,7 +161,7 @@ bool CPhysicsObject::IsDragEnabled() const {
 }
 
 bool CPhysicsObject::IsMotionEnabled() const {
-	return m_pObject->isActive();
+	return (m_pObject->getFlags() & DISABLE_SIMULATION) ? false : true;
 }
 
 void CPhysicsObject::EnableCollisions(bool enable) {
@@ -198,12 +201,12 @@ void CPhysicsObject::EnableMotion(bool enable) {
 	if (IsMotionEnabled() == enable || IsStatic()) return;
 
 	if (enable) {
-		m_pObject->setActivationState(DISABLE_SIMULATION);
+		m_pObject->setActivationState(ACTIVE_TAG);
 	} else {
 		m_pObject->setLinearVelocity(btVector3(0, 0, 0));
 		m_pObject->setAngularVelocity(btVector3(0, 0, 0));
 
-		m_pObject->setActivationState(ACTIVE_TAG);
+		m_pObject->setActivationState(DISABLE_SIMULATION);
 	}
 }
 
@@ -229,6 +232,36 @@ void CPhysicsObject::SetGameIndex(unsigned short gameIndex) {
 
 unsigned short CPhysicsObject::GetGameIndex() const {
 	return m_iGameIndex;
+}
+
+CPhysicsObject::SleepState CPhysicsObject::GetSleepState() const {
+	return m_sleepState;
+}
+
+bool CPhysicsObject::UpdateSleepState(int activationState) {
+	// Not a state we want to track.
+	if (activationState == WANTS_DEACTIVATION)
+		return false;
+
+	CPhysicsObject::SleepState curState = m_sleepState;
+	CPhysicsObject::SleepState nextState = m_sleepState;
+
+	switch (activationState) {
+		case DISABLE_DEACTIVATION:
+		case ACTIVE_TAG:
+			nextState = SleepState::Awake;
+			break;
+		case DISABLE_SIMULATION:
+		case ISLAND_SLEEPING:
+			nextState = SleepState::Sleep;
+			break;
+	}
+
+	if (curState != nextState) {
+		m_sleepState = nextState;
+		return true;
+	}
+	return false;
 }
 
 void CPhysicsObject::SetCallbackFlags(unsigned short callbackflags) {
@@ -1002,12 +1035,11 @@ void CPhysicsObject::RemoveTrigger() {
 }
 
 void CPhysicsObject::TriggerObjectEntered(CPhysicsObject *pObject) {
-	// Doesn't work.
-	//m_pEnv->HandleObjectEnteredTrigger(this, pObject);
+	m_pEnv->HandleObjectEnteredTrigger(this, pObject);
 }
 
 void CPhysicsObject::TriggerObjectExited(CPhysicsObject *pObject) {
-	//m_pEnv->HandleObjectExitedTrigger(this, pObject);
+	m_pEnv->HandleObjectExitedTrigger(this, pObject);
 }
 
 void CPhysicsObject::BecomeHinged(int localAxis) {
@@ -1066,14 +1098,15 @@ void CPhysicsObject::OutputDebugInfo() const {
 
 	// TODO: Attached to x controllers
 
-	Msg("State: %s, Collision %s, Motion %s, Drag %s, Flags %04X (game %04x, index %d)\n", 
+	Msg("State: %s, Collision %s, Motion %s, Drag %s, Flags %04X (game %04x, index %d), CollisionHints: %d\n", 
 		IsAsleep() ? "Asleep" : "Awake",
 		IsCollisionEnabled() ? "Enabled" : "Disabled",
 		IsStatic() ? "Static" : IsMotionEnabled() ? "Enabled" : "Disabled",
 		IsDragEnabled() ? "Enabled" : "Disabled",
 		m_pObject->getFlags(),
 		GetGameFlags(),
-		GetGameIndex()
+		GetGameIndex(),
+		m_collisionHints
 	);
 
 	
@@ -1093,15 +1126,14 @@ void CPhysicsObject::SetUseAlternateGravity(bool bSet)
 	NOT_IMPLEMENTED
 }
 
-void CPhysicsObject::SetCollisionHints(uint32 collisionHints)
+void CPhysicsObject::SetCollisionHints(uint32_t collisionHints)
 {
-	//NOT_IMPLEMENTED
+	m_collisionHints = collisionHints;
 }
 
-uint32 CPhysicsObject::GetCollisionHints() const
+uint32_t CPhysicsObject::GetCollisionHints() const
 {
-	NOT_IMPLEMENTED
-	return uint32();
+	return m_collisionHints;
 }
 
 IPredictedPhysicsObject* CPhysicsObject::GetPredictedInterface(void) const

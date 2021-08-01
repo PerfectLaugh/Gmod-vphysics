@@ -66,6 +66,13 @@ class CPhysicsObject : public IPhysicsObject32 {
 		void								SetCallbackFlags(unsigned short callbackflags);
 		unsigned short						GetCallbackFlags() const;
 
+		enum class SleepState {
+			Sleep,
+			Awake,
+		};
+		CPhysicsObject::SleepState			GetSleepState() const;
+		bool								UpdateSleepState(int activationState);
+
 		void								Wake();
 		void								Sleep();
 
@@ -165,8 +172,8 @@ class CPhysicsObject : public IPhysicsObject32 {
 		void								OutputDebugInfo() const;
 
 		void								SetUseAlternateGravity(bool bSet);
-		void								SetCollisionHints(uint32 collisionHints);
-		uint32								GetCollisionHints() const;
+		void								SetCollisionHints(uint32_t collisionHints);
+		uint32_t							GetCollisionHints() const;
 
 		IPredictedPhysicsObject*			GetPredictedInterface(void) const;
 		void								SyncWith(IPhysicsObject* pOther);
@@ -224,10 +231,12 @@ class CPhysicsObject : public IPhysicsObject32 {
 		btGhostObjectCallback *				m_pGhostCallback;
 
 		unsigned int						m_materialIndex;
+		SleepState							m_sleepState;
 		unsigned short						m_callbacks;
 		unsigned short						m_gameFlags;
 		unsigned int						m_contents;
 		unsigned short						m_iGameIndex;
+		uint32_t							m_collisionHints;
 
 		bool								m_bRemoving; // Object being removed? (in destructor or something)
 

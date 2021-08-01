@@ -53,7 +53,7 @@ CPhysicsSoftBody::~CPhysicsSoftBody() {
 }
 
 bool CPhysicsSoftBody::IsAsleep() const {
-	return m_pSoftBody->getActivationState() == ISLAND_SLEEPING || m_pSoftBody->getActivationState() == DISABLE_SIMULATION;
+	return m_pSoftBody->getActivationState() == ISLAND_SLEEPING;
 }
 
 void CPhysicsSoftBody::SetTotalMass(float fMass, bool bFromFaces) {
