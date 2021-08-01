@@ -10,8 +10,10 @@ class CPhysicsEnvironment;
 class CPhysicsFluidCallback;
 class CPhysicsObject;
 
-class CPhysicsFluidController : public IPhysicsFluidController, public IController
+ATTRIBUTE_ALIGNED16(class) CPhysicsFluidController : public IPhysicsFluidController, public IController
 {
+	public:
+								BT_DECLARE_ALIGNED_ALLOCATOR();
 	public:
 								CPhysicsFluidController(CPhysicsEnvironment *pEnv, CPhysicsObject *pFluidObject, fluidparams_t *pParams);
 								~CPhysicsFluidController();

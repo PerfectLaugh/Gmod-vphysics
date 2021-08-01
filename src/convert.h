@@ -4,8 +4,8 @@
 #define HL2BULL_FACTOR METERS_PER_INCH
 #define HL2BULL_INSQR_PER_METERSQR (1.f / (HL2BULL_FACTOR*HL2BULL_FACTOR))
 
-#define BULL2HL(x) (float)((x) * (1.0f/HL2BULL_FACTOR))
-#define HL2BULL(x) (double)((x) * HL2BULL_FACTOR)
+#define BULL2HL(x) ((float)(x) * (1.0f/HL2BULL_FACTOR))
+#define HL2BULL(x) ((btScalar)(x) * (btScalar)(HL2BULL_FACTOR))
 
 #ifdef _MSC_VER
 	// Conversion from x to x, possible loss of data
@@ -38,9 +38,9 @@ inline void ConvertAngularImpulseToHL(const btVector3 &angularimp, AngularImpuls
 inline void ConvertMatrixToHL(const btTransform &transform, matrix3x4_t &hl);
 inline void ConvertMatrixToBull(const matrix3x4_t &hl, btTransform &transform);
 
-inline float ConvertDistanceToBull(float distance);
-inline float ConvertDistanceToHL(float distance);
-inline float ConvertEnergyToHL(float energy);
+inline btScalar ConvertDistanceToBull(float distance);
+inline float ConvertDistanceToHL(btScalar distance);
+inline float ConvertEnergyToHL(btScalar energy);
 
 /************************************************
 * COORDINATE SYSTEMS:
@@ -240,15 +240,15 @@ inline void ConvertMatrixToBull(const matrix3x4_t &hl, btTransform &transform) {
 	transform.setOrigin(origin);
 }
 
-inline float ConvertDistanceToBull(float distance) {
+inline btScalar ConvertDistanceToBull(float distance) {
 	return HL2BULL(distance);
 }
 
-inline float ConvertDistanceToHL(float distance) {
+inline float ConvertDistanceToHL(btScalar distance) {
 	return BULL2HL(distance);
 }
 
-inline float ConvertEnergyToHL(float energy) {
+inline float ConvertEnergyToHL(btScalar energy) {
 	return energy * HL2BULL_INSQR_PER_METERSQR;
 }
 

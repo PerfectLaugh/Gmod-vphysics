@@ -15,8 +15,10 @@ class IPhysicsObject;
 
 class CPlayerControllerEventListener;
 
-class CPlayerController : public IController, public IPhysicsPlayerController, public IObjectEventListener
+ATTRIBUTE_ALIGNED16(class) CPlayerController : public IController, public IPhysicsPlayerController, public IObjectEventListener
 {
+	public:
+		BT_DECLARE_ALIGNED_ALLOCATOR();
 	public:
 		CPlayerController(CPhysicsEnvironment *pEnv, CPhysicsObject *pObject);
 		~CPlayerController();
@@ -65,7 +67,7 @@ class CPlayerController : public IController, public IPhysicsPlayerController, p
 		CPhysicsEnvironment *			m_pEnv;
 		btVector3						m_saveRot;
 		IPhysicsPlayerControllerEvent *	m_handler;
-		float							m_maxDeltaPosition;
+		btScalar						m_maxDeltaPosition;
 		float							m_dampFactor;
 		float							m_secondsToArrival;
 		btVector3						m_maxSpeed; // Maximum acceleration speed.
@@ -82,7 +84,7 @@ class CPlayerController : public IController, public IPhysicsPlayerController, p
 		int								m_ticksSinceUpdate;
 };
 
-void ComputeController(btVector3 &currentSpeed, const btVector3 &delta, const btVector3 &maxSpeed, float scaleDelta, float damping, btVector3 *accelOut = NULL);
+void ComputeController(btVector3 &currentSpeed, const btVector3 &delta, const btVector3 &maxSpeed, btScalar scaleDelta, btScalar damping, btVector3 *accelOut = NULL);
 
 CPlayerController *CreatePlayerController(CPhysicsEnvironment *pEnv, IPhysicsObject *pObject);
 

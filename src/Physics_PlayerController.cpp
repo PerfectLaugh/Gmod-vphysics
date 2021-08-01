@@ -9,7 +9,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-void ComputeController(btVector3 &currentSpeed, const btVector3 &delta, const btVector3 &maxSpeed, float scaleDelta, float damping, btVector3 *accelOut) {
+void ComputeController(btVector3 &currentSpeed, const btVector3 &delta, const btVector3 &maxSpeed, btScalar scaleDelta, btScalar damping, btVector3 *accelOut) {
 	// Timestep scale
 	btVector3 acceleration = delta * scaleDelta;
 
@@ -147,11 +147,11 @@ void CPlayerController::MaxSpeed(const Vector &hlMaxVelocity) {
 	ConvertPosToBull(hlMaxVelocity, maxVel);
 	btVector3 available = maxVel;
 	
-	float maxVelLen = maxVel.length();
+	btScalar maxVelLen = maxVel.length();
 	maxVel.normalize();
 	
 	// Only if we're headed in the same direction as maxVelocity
-	float dot = maxVel.dot(m_pObject->GetObject()->getLinearVelocity()); // Magnitude of our speed in the same direction as maxVel
+	btScalar dot = maxVel.dot(m_pObject->GetObject()->getLinearVelocity()); // Magnitude of our speed in the same direction as maxVel
 	if (dot > 0) {
 		maxVel *= dot * maxVelLen; // maxVel(normalized) *= dot(maxVel(norm), linVel) * len(maxVel)
 		available -= maxVel; // Now subtract the magnitude of our current speed along the maxVelocity vector
@@ -259,8 +259,8 @@ CPhysicsObject *CPlayerController::GetGroundObject() {
 		if (objA == m_pObject->GetObject() || objB == m_pObject->GetObject()) {
 			int ourID = m_pObject->GetObject() == objA ? 0 : 1;
 
-			for (int i = 0; i < pManifold->getNumContacts(); i++) {
-				btManifoldPoint &point = pManifold->getContactPoint(i);
+			for (int j = 0; j < pManifold->getNumContacts(); j++) {
+				btManifoldPoint &point = pManifold->getContactPoint(j);
 
 				btVector3 norm = point.m_normalWorldOnB; // Normal worldspace A->B
 				if (ourID == 1) {
@@ -359,7 +359,7 @@ void CPlayerController::CalculateVelocity(float dt) {
 	}
 
 	// TODO: Clamp the velocity based on collisions (using variables such as push max mass, max speed etc)
-	btScalar velLen = linVel.length2();
+	//btScalar velLen = linVel.length2();
 
 	body->setLinearVelocity(linVel + baseVelocity);
 }

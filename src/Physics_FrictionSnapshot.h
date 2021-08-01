@@ -37,7 +37,7 @@ class CPhysicsFrictionSnapshot : public IPhysicsFrictionSnapshot
 	private:
 		std::vector<btPersistentManifold *>	m_manifolds;
 		CPhysicsObject *					m_pObject;
-		int									m_iCurManifold;
+		size_t								m_iCurManifold;
 		int									m_iCurContactPoint;
 };
 

@@ -12,7 +12,12 @@ class CPhysicsConstraint;
 class IController;
 
 // Bullet uses this so we can sync the graphics representation of the object.
-struct btMassCenterMotionState : public btMotionState {
+ATTRIBUTE_ALIGNED16(class) btMassCenterMotionState : public btMotionState
+{
+public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+
+public:
 	btTransform	m_centerOfMassOffset;
 	btTransform m_worldTrans;
 	void *		m_userPointer;
@@ -35,7 +40,10 @@ class IObjectEventListener {
 		virtual void ObjectDestroyed(CPhysicsObject *pObject) {}
 };
 
-class CPhysicsObject : public IPhysicsObject32 {
+ATTRIBUTE_ALIGNED16(class) CPhysicsObject : public IPhysicsObject32
+{
+	public:
+											BT_DECLARE_ALIGNED_ALLOCATOR();
 	public:
 											CPhysicsObject();
 											~CPhysicsObject();

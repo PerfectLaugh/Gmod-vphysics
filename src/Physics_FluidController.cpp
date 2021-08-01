@@ -222,8 +222,8 @@ void CPhysicsFluidController::Tick(float dt) {
 
 			// Calc the volume coefficient
 			btScalar dist = -submerged;
-			float p = clamp(dist / 1.2, 0.f, 1.f);
-			btScalar vol = p * pObject->GetVolume();
+			btScalar p = clamp(dist / 1.2, 0.f, 1.f);
+			btScalar vol = p * (btScalar)pObject->GetVolume();
 
 			// TODO: Need a way to calculate this properly
 			// Force should be exactly equal to -gravity when submerged distance is 0

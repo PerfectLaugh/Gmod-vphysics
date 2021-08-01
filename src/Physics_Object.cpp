@@ -75,6 +75,14 @@ CPhysicsObject::CPhysicsObject() {
 	m_pName = NULL;
 
 	m_bRemoving = false;
+
+	m_angDragCoefficient = 0.0;
+	m_dragCoefficient = 0.0;
+	m_bIsSphere = false;
+	m_fBuoyancyRatio = 0.0;
+	m_fMass = 0.0;
+	m_fVolume = 0.0;
+	m_iLastActivationState = 0;
 }
 
 CPhysicsObject::~CPhysicsObject() {
@@ -88,12 +96,14 @@ CPhysicsObject::~CPhysicsObject() {
 			m_pEnv->DestroyFluidController((IPhysicsFluidController *)m_pFluidController);
 	}
 
-	for (int i = 0; i < m_pEventListeners.size(); i++) {
+	for (size_t i = 0; i < m_pEventListeners.size(); i++) {
 		m_pEventListeners[i]->ObjectDestroyed(this);
 	}
 	
-	if (m_pName)
-		delete [] m_pName;
+	if (m_pName) {
+		delete[] m_pName;
+		m_pName = nullptr;
+	}
 
 	if (m_pEnv && m_pObject) {
 		// Don't change this. This will eventually pan out to removeRigidBody.
@@ -122,8 +132,9 @@ bool CPhysicsObject::IsFluid() const {
 }
 
 bool CPhysicsObject::IsHinged() const {
-	for (int i = 0; i < m_pConstraintVec.size(); i++) {
-		if (m_pConstraintVec[i]->GetType() == CONSTRAINT_HINGE)
+	for (size_t i = 0; i < m_pConstraintVec.size(); i++) {
+		auto type = m_pConstraintVec[i]->GetType();
+		if (type == CONSTRAINT_HINGE)
 			return true;
 	}
 
@@ -445,7 +456,7 @@ void CPhysicsObject::SetMaterialIndex(int materialIndex) {
 		m_materialIndex = materialIndex;
 		m_pObject->setFriction(pSurface->physics.friction);
 		//m_pObject->setRollingFriction(pSurface->physics.friction);
-		m_pObject->setRestitution(MIN(pSurface->physics.elasticity, 1));
+		m_pObject->setRestitution(MIN(pSurface->physics.elasticity, 1.0));
 
 		// FIXME: Figure out how to convert damping values.
 
@@ -501,8 +512,8 @@ void CPhysicsObject::SetSphereRadius(float radius)
 
 float CPhysicsObject::GetEnergy() const {
 	// (1/2) * mass * velocity^2
-	float e = 0.5f * GetMass() * m_pObject->getLinearVelocity().dot(m_pObject->getLinearVelocity());
-	e += 0.5f * GetMass() * m_pObject->getAngularVelocity().dot(m_pObject->getAngularVelocity());
+	btScalar e = 0.5 * GetMass() * m_pObject->getLinearVelocity().dot(m_pObject->getLinearVelocity());
+	e += 0.5 * GetMass() * m_pObject->getAngularVelocity().dot(m_pObject->getAngularVelocity());
 	return ConvertEnergyToHL(e);
 }
 
@@ -1180,7 +1191,7 @@ void CPhysicsObject::Init(CPhysicsEnvironment *pEnv, btRigidBody *pObject, int m
 			}
 		}
 
-		//m_pObject->setDebugName(m_pName);
+		m_pObject->setDamping(pParams->damping, pParams->rotdamping);
 	}
 
 	SetMaterialIndex(materialIndex);
@@ -1205,12 +1216,12 @@ void CPhysicsObject::Init(CPhysicsEnvironment *pEnv, btRigidBody *pObject, int m
 
 	ComputeDragBasis(isStatic);
 
+	m_dragCoefficient = drag;
+	m_angDragCoefficient = angDrag;
+
 	if (!isStatic && drag != 0.0f) {
 		EnableDrag(true);
 	}
-
-	m_dragCoefficient = drag;
-	m_angDragCoefficient = angDrag;
 
 	// Compute our continuous collision detection stuff (for fast moving objects, prevents tunneling)
 	// This doesn't work on compound objects! see: btDiscreteDynamicsWorld::integrateTransforms
@@ -1220,12 +1231,12 @@ void CPhysicsObject::Init(CPhysicsEnvironment *pEnv, btRigidBody *pObject, int m
 		mins = mins.absolute();
 		maxs = maxs.absolute();
 
-		float maxradius = MIN(MIN(maxs.getX(), maxs.getY()), maxs.getZ());
-		float minradius = MIN(MIN(mins.getX(), mins.getY()), mins.getZ());
-		float radius = MIN(maxradius, minradius);
+		auto maxradius = MIN(MIN(maxs.getX(), maxs.getY()), maxs.getZ());
+		auto minradius = MIN(MIN(mins.getX(), mins.getY()), mins.getZ());
+		auto radius = MIN(maxradius, minradius);
 
-		m_pObject->setCcdMotionThreshold((radius / 2) * (radius / 2));
-		m_pObject->setCcdSweptSphereRadius(0.7f * radius);
+		m_pObject->setCcdMotionThreshold((radius / 2.0) * (radius / 2.0));
+		m_pObject->setCcdSweptSphereRadius(0.7 * radius);
 	}
 
 	if (isStatic) {
@@ -1289,12 +1300,12 @@ float CPhysicsObject::GetDragInDirection(const btVector3 &dir) const {
 	btMatrix3x3 mat = m_pObject->getCenterOfMassTransform().getBasis();
 	BtMatrix_vimult(mat, dir, out);
 
-	return m_dragCoefficient * out.absolute().dot(m_dragBasis.absolute());
+	return (float)(m_dragCoefficient * out.absolute().dot(m_dragBasis.absolute()));
 }
 
 // UNEXPOSED
 float CPhysicsObject::GetAngularDragInDirection(const btVector3 &dir) const {
-	return m_angDragCoefficient * dir.absolute().dot(m_angDragBasis.absolute());
+	return (float)(m_angDragCoefficient * dir.absolute().dot(m_angDragBasis.absolute()));
 }
 
 // UNEXPOSED

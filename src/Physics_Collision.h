@@ -16,8 +16,10 @@ struct bboxcache_t {
 	Vector			mins, maxs;
 };
 
-class CPhysCollide {
+ATTRIBUTE_ALIGNED16(class) CPhysCollide {
 	public:
+		BT_DECLARE_ALIGNED_ALLOCATOR();
+
 		CPhysCollide(btCollisionShape *pShape);
 
 		const btCollisionShape *GetCollisionShape() const {

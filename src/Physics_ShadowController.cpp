@@ -26,7 +26,7 @@ float ComputeShadowControllerBull(btRigidBody *object, shadowcontrol_params_t &p
 	if (secondsToArrival < 0) secondsToArrival = 0;
 
 	if (fraction <= 0) return secondsToArrival;
-	float scale = SAFE_DIVIDE(fraction, dt);
+	btScalar scale = SAFE_DIVIDE(fraction, dt);
 
 	btTransform transform = object->getWorldTransform();
 	transform *= ((btMassCenterMotionState *)object->getMotionState())->m_centerOfMassOffset.inverse();
@@ -192,10 +192,10 @@ void CShadowController::MaxSpeed(float maxSpeed, float maxAngularSpeed) {
 
 	// m_currentSpeed = bullSpeed;
 
-	float length = bullSpeed.length();
+	btScalar length = bullSpeed.length();
 	bullSpeed.normalize();
 
-	float dot = bullSpeed.dot(body->getLinearVelocity());
+	btScalar dot = bullSpeed.dot(body->getLinearVelocity());
 	if (dot > 0) {
 		bullSpeed *= dot * length;
 		available -= bullSpeed;
@@ -212,10 +212,10 @@ void CShadowController::MaxSpeed(float maxSpeed, float maxAngularSpeed) {
 	ConvertAngularImpulseToBull(Vector(maxAngularSpeed, maxAngularSpeed, maxAngularSpeed), bullAngular);
 	btVector3 availableAngular;
 
-	float lengthAngular = bullAngular.length();
+	btScalar lengthAngular = bullAngular.length();
 	bullAngular.normalize();
 
-	float dotAngular = bullAngular.dot(body->getAngularVelocity());
+	btScalar dotAngular = bullAngular.dot(body->getAngularVelocity());
 	if (dotAngular > 0) {
 		bullAngular *= dotAngular * lengthAngular;
 		availableAngular -= bullAngular;

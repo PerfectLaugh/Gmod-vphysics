@@ -125,7 +125,7 @@ int CPhysicsMotionController::CountObjects() {
 void CPhysicsMotionController::GetObjects(IPhysicsObject **pObjectList) {
 	if (!pObjectList) return;
 
-	for (int i = 0; i < m_objectList.size(); i++) {
+	for (size_t i = 0; i < m_objectList.size(); i++) {
 		pObjectList[i] = (IPhysicsObject *)m_objectList[i];
 	}
 }
@@ -135,7 +135,7 @@ void CPhysicsMotionController::ClearObjects() {
 }
 
 void CPhysicsMotionController::WakeObjects() {
-	for (int i = 0; i < m_objectList.size(); i++) {
+	for (size_t i = 0; i < m_objectList.size(); i++) {
 		m_objectList[i]->GetObject()->setActivationState(ACTIVE_TAG);
 	}
 }

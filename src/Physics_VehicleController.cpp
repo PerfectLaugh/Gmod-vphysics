@@ -13,9 +13,9 @@
 #include "tier0/memdbgon.h"
 
 // MPH2MS: 1(miles/hr) = 0.44704(meters/sec)
-#define MPH2MS(x) ((x) * 0.44704f)
+#define MPH2MS(x) ((x) * 0.44704)
 // KMH2MS: 1(km/h) = 0.27777778(meters/sec)
-#define KMH2MS(x) ((x) * 0.27777778f)
+#define KMH2MS(x) ((x) * 0.27777778)
 
 /*********************************
 * MISC CLASSES
@@ -422,7 +422,7 @@ void CPhysicsVehicleController::UpdateSteering(vehicle_controlparams_t &controls
 	float steeringVal = controls.steering;
 
 	// TODO: Calculate for degreesBoost
-	float speed = -KMH2MS(m_pVehicle->getCurrentSpeedKmHour());
+	auto speed = -KMH2MS(m_pVehicle->getCurrentSpeedKmHour());
 	if (speed <= MPH2MS(m_vehicleParams.steering.speedSlow)) {
 		steeringVal *= m_vehicleParams.steering.degreesSlow;
 	} else if (speed >= MPH2MS(m_vehicleParams.steering.speedFast)) {
@@ -431,9 +431,9 @@ void CPhysicsVehicleController::UpdateSteering(vehicle_controlparams_t &controls
 		// Don't allow a division by zero (or negativity)
 		if (m_vehicleParams.steering.speedSlow < m_vehicleParams.steering.speedFast) {
 			// Inbetween, interpolate
-			float val = (MPH2MS(m_vehicleParams.steering.speedFast) - speed) / (MPH2MS(m_vehicleParams.steering.speedFast) - MPH2MS(m_vehicleParams.steering.speedSlow));
+			auto val = (MPH2MS(m_vehicleParams.steering.speedFast) - speed) / (MPH2MS(m_vehicleParams.steering.speedFast) - MPH2MS(m_vehicleParams.steering.speedSlow));
 
-			steeringVal *= m_vehicleParams.steering.degreesFast + (val * m_vehicleParams.steering.degreesSlow);
+			steeringVal *= (float)(m_vehicleParams.steering.degreesFast + (val * m_vehicleParams.steering.degreesSlow));
 		}
 	}
 
@@ -449,7 +449,7 @@ void CPhysicsVehicleController::UpdateEngine(vehicle_controlparams_t &controls, 
 	// Update the operating params
 	// If speed is high negative, the brake will be applied!
 	// FIXME: This does not report velocity relative to the ground! Should we calculate this from wheel rotation speed?
-	float fSpeed = m_pVehicle->getCurrentSpeedKmHour();
+	auto fSpeed = m_pVehicle->getCurrentSpeedKmHour();
 	m_vehicleState.speed = ConvertDistanceToHL(KMH2MS(-fSpeed));
 
 	CalcEngineTransmission(controls, dt);
@@ -487,7 +487,7 @@ void CPhysicsVehicleController::UpdateWheels(vehicle_controlparams_t &controls, 
 
 			// We're cheating a bit here, since this is a raycast vehicle with unrealistic math the wheels absolutely cannot skid
 			// in the forward direction, so we'll only count sidewards speed as skidding
-			float skidSpeed = fabs(wheel.m_raycastInfo.m_wheelAxleWS.dot(velAtGround));
+			auto skidSpeed = abs(wheel.m_raycastInfo.m_wheelAxleWS.dot(velAtGround));
 			if (ConvertDistanceToHL(skidSpeed) > m_vehicleState.skidSpeed) {
 				m_vehicleState.skidSpeed = ConvertDistanceToHL(skidSpeed);
 			}
@@ -506,24 +506,24 @@ void CPhysicsVehicleController::CalcEngineTransmission(vehicle_controlparams_t &
 	// throttle goes forward and backward, [-1, 1]
 	// brake_val [0..1]
 
-	//float absSpeed = fabs(KMH2MS(m_pVehicle->getCurrentSpeedKmHour()));
+	//auto absSpeed = abs(KMH2MS(m_pVehicle->getCurrentSpeedKmHour()));
 
 	const static int secondsPerMinute = 60;
 
 	if (m_vehicleParams.engine.isAutoTransmission) {
 		// Estimate the engine RPM
-		float avgRotSpeed = 0;
+		auto avgRotSpeed = 0.0;
 		for (int i = 0; i < m_iWheelCount; i++) {
 			btWheelInfo wheelInfo = m_pVehicle->getWheelInfo(i);
 
-			float rotSpeed = fabs(wheelInfo.m_deltaRotation * wheelInfo.m_wheelsRadius);
+			auto rotSpeed = abs(wheelInfo.m_deltaRotation * wheelInfo.m_wheelsRadius);
 			avgRotSpeed += rotSpeed;
 		}
 
 		//avgRotSpeed *= 0.5f / M_PI / m_iWheelCount;
 		avgRotSpeed /= m_iWheelCount;
 
-		float estEngineRPM = avgRotSpeed * m_vehicleParams.engine.axleRatio * m_vehicleParams.engine.gearRatio[m_vehicleState.gear] * secondsPerMinute;
+		auto estEngineRPM = avgRotSpeed * m_vehicleParams.engine.axleRatio * m_vehicleParams.engine.gearRatio[m_vehicleState.gear] * secondsPerMinute;
 
 		// only shift up when going forward
 		if (controls.throttle > 0) {
@@ -540,7 +540,7 @@ void CPhysicsVehicleController::CalcEngineTransmission(vehicle_controlparams_t &
 			estEngineRPM = avgRotSpeed * m_vehicleParams.engine.axleRatio * m_vehicleParams.engine.gearRatio[m_vehicleState.gear] * secondsPerMinute;
 		}
 
-		m_vehicleState.engineRPM = estEngineRPM;
+		m_vehicleState.engineRPM = (float)estEngineRPM;
 	}
 }
 
@@ -550,7 +550,7 @@ void CPhysicsVehicleController::CalcEngine(vehicle_controlparams_t &controls, fl
 
 	// Apply our forces!
 	// FIXME: Forces are in NEWTONS!
-	if (fabs(controls.throttle) > 1e-4) {
+	if (abs(controls.throttle) > 1e-4) {
 		for (int i = 0; i < m_iWheelCount; i++) {
 			m_pVehicle->setBrake(0, i);
 		}
@@ -559,31 +559,31 @@ void CPhysicsVehicleController::CalcEngine(vehicle_controlparams_t &controls, fl
 		const static int seconds_per_minute = 60;
 
 		// TODO: Convert to NEWTONS!
-		float force = controls.throttle * 
+		auto force = (btScalar)(controls.throttle * 
 			m_vehicleParams.engine.horsepower * (watt_per_hp * seconds_per_minute) * 
 			m_vehicleParams.engine.gearRatio[m_vehicleState.gear]  * m_vehicleParams.engine.axleRatio / 
-			(m_vehicleParams.engine.maxRPM * (2 * M_PI_F));
+			(m_vehicleParams.engine.maxRPM * (2 * M_PI_F)));
 
 		int wheelIndex = 0;
 		for (int i = 0; i < m_vehicleParams.axleCount; i++) {
-			float wheelForce = force * m_vehicleParams.axles[i].torqueFactor * ConvertDistanceToBull(m_vehicleParams.axles[i].wheels.radius);
+			auto wheelForce = force * m_vehicleParams.axles[i].torqueFactor * ConvertDistanceToBull(m_vehicleParams.axles[i].wheels.radius);
 
 			for (int w = 0; w < m_vehicleParams.wheelsPerAxle; w++, wheelIndex++) {
 				m_pVehicle->applyEngineForce(wheelForce, wheelIndex);
 			}
 		}
-	} else if (fabs(controls.brake) > 1e-4) {
+	} else if (abs(controls.brake) > 1e-4) {
 		for (int i = 0; i < m_iWheelCount; i++) {
 			m_pVehicle->applyEngineForce(0, i);
 		}
 
 		// Calculate the brake impulse
 		// float wheel_force_by_brake = brake_val * m_gravityLength * ( m_bodyMass + m_totalWheelMass );
-		float brakeImpulse = controls.brake * m_pBody->GetMass() * dt;
+		auto brakeImpulse = controls.brake * m_pBody->GetMass() * dt;
 
 		int wheelIndex = 0;
 		for (int i = 0; i < m_vehicleParams.axleCount; i++) {
-			float wheelForce = brakeImpulse * m_vehicleParams.axles[i].brakeFactor;
+			auto wheelForce = brakeImpulse * m_vehicleParams.axles[i].brakeFactor;
 			for (int w = 0; w < m_vehicleParams.wheelsPerAxle; w++, wheelIndex++) {
 				m_pVehicle->setBrake(wheelForce, wheelIndex);
 			}
@@ -596,11 +596,11 @@ void CPhysicsVehicleController::CalcEngine(vehicle_controlparams_t &controls, fl
 
 	if (controls.handbrake) {
 		// IVP will freeze the wheel rotations, but we'll have to apply full friction on ground vs vehicle
-		float normalForce = m_pBody->GetMass() * m_pEnv->GetBulletEnvironment()->getGravity().length();
+		auto normalForce = m_pBody->GetMass() * m_pEnv->GetBulletEnvironment()->getGravity().length();
 
 		for (int i = 0; i < m_iWheelCount; i++) {
-			float fricCoeff = m_pWheels[i]->GetObject()->getFriction();
-			float wheelForce = (fricCoeff * normalForce) / m_iWheelCount;
+			auto fricCoeff = m_pWheels[i]->GetObject()->getFriction();
+			auto wheelForce = (fricCoeff * normalForce) / m_iWheelCount;
 
 			m_pVehicle->setBrake(wheelForce * dt, i);
 			m_pVehicle->applyEngineForce(0, i);
@@ -713,15 +713,15 @@ void CPhysicsVehicleController::GetCarSystemDebugData(vehicle_debugcarsystem_t &
 		btWheelInfo &wheelInfo = m_pVehicle->getWheelInfo(i);
 
 		btVector3 wheelPos = wheelInfo.m_worldTransform.getOrigin();
-		debugCarSystem.vecWheelPos[i].x = wheelPos.x();
-		debugCarSystem.vecWheelPos[i].y = -wheelPos.y();
-		debugCarSystem.vecWheelPos[i].z = -wheelPos.z();
+		debugCarSystem.vecWheelPos[i].x = (float)wheelPos.x();
+		debugCarSystem.vecWheelPos[i].y = (float)-wheelPos.y();
+		debugCarSystem.vecWheelPos[i].z = (float)-wheelPos.z();
 
 		// raycast hitpos
 		btVector3 rayContact = wheelInfo.m_raycastInfo.m_contactPointWS;
-		debugCarSystem.vecWheelRaycastImpacts[i].x = rayContact.x();
-		debugCarSystem.vecWheelRaycastImpacts[i].y = -rayContact.y();
-		debugCarSystem.vecWheelRaycastImpacts[i].z = -rayContact.z();
+		debugCarSystem.vecWheelRaycastImpacts[i].x = (float)rayContact.x();
+		debugCarSystem.vecWheelRaycastImpacts[i].y = (float)-rayContact.y();
+		debugCarSystem.vecWheelRaycastImpacts[i].z = (float)-rayContact.z();
 	}
 #endif
 }

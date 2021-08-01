@@ -331,8 +331,8 @@ class CCollisionEventListener {
 			btCollisionObject* colObj0 = (btCollisionObject*)collisionPair.m_pProxy0->m_clientObject;
 			btCollisionObject* colObj1 = (btCollisionObject*)collisionPair.m_pProxy1->m_clientObject;
 
-			CPhysicsObject* physObA = (CPhysicsObject*)colObj0->getUserPointer();
-			CPhysicsObject* physObB = (CPhysicsObject*)colObj1->getUserPointer();
+			//CPhysicsObject* physObA = (CPhysicsObject*)colObj0->getUserPointer();
+			//CPhysicsObject* physObB = (CPhysicsObject*)colObj1->getUserPointer();
 
 			// These are our own internal objects, don't do callbacks on them.
 			if (colObj0->getInternalType() == btCollisionObject::CO_GHOST_OBJECT || colObj1->getInternalType() == btCollisionObject::CO_GHOST_OBJECT) {
@@ -407,8 +407,8 @@ class CCollisionEventListener {
 			if (pObj0->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE || pObj1->GetCallbackFlags() & CALLBACK_MARKED_FOR_DELETE)
 				return;
 
-			auto rb0 = btRigidBody::upcast(colObj0);
-			auto rb1 = btRigidBody::upcast(colObj1);
+			//auto rb0 = btRigidBody::upcast(colObj0);
+			//auto rb1 = btRigidBody::upcast(colObj1);
 
 			unsigned int flags0 = pObj0->GetCallbackFlags();
 			unsigned int flags1 = pObj1->GetCallbackFlags();
@@ -458,7 +458,7 @@ class CCollisionEventListener {
 			auto invMass0 = rb0->getInvMass();
 			auto invMass1 = rb1->getInvMass();
 
-			float combinedMass = 0.0;
+			btScalar combinedMass = 0.0;
 			if (invMass0 != 0.0) {
 				combinedMass += 1.0 / invMass0;
 			}
@@ -467,7 +467,7 @@ class CCollisionEventListener {
 			}
 
 			if (combinedMass != 0.0) {
-				m_tmpEvent.collisionSpeed = ConvertForceImpulseToHL(abs(cp->getAppliedImpulse())) / combinedMass; // Speed of body 1 rel to body 2 on axis of constraint 
+				m_tmpEvent.collisionSpeed = ConvertForceImpulseToHL(abs(cp->getAppliedImpulse())) / (float)combinedMass; // Speed of body 1 rel to body 2 on axis of constraint 
 				//Msg("postCollision: %f %f\n", cp->getAppliedImpulse(), m_tmpEvent.collisionSpeed);
 			}
 			else {
@@ -513,7 +513,7 @@ class CCollisionEventListener {
 
 			//Msg("friction: %f %f\n", cp->getAppliedImpulse(), invMass);
 
-			float energy = abs(cp->getAppliedImpulse() * invMass);
+			auto energy = abs(cp->getAppliedImpulse() * invMass);
 
 			if (energy > 0.05f) {
 				CPhysicsCollisionData data(cp);
@@ -1248,7 +1248,7 @@ void CPhysicsEnvironment::TraceRay(const Ray_t &ray, unsigned int fMask, IPhysic
 	btCollisionWorld::ClosestRayResultCallback cb(vecStart, vecEnd);
 	m_pBulletEnvironment->rayTest(vecStart, vecEnd, cb);
 
-	pTrace->fraction = cb.m_closestHitFraction;
+	pTrace->fraction = (float)cb.m_closestHitFraction;
 	ConvertPosToHL(cb.m_hitPointWorld, pTrace->endpos);
 	ConvertDirectionToHL(cb.m_hitNormalWorld, pTrace->plane.normal);
 }
@@ -1307,7 +1307,7 @@ void CPhysicsEnvironment::SweepConvex(const CPhysConvex *pConvex, const Vector &
 	CFilteredConvexResultCallback cb(pTraceFilter, fMask, vecStart, vecEnd);
 	m_pBulletEnvironment->convexSweepTest(pShape, transStart, transEnd, cb, 0.0001f);
 
-	pTrace->fraction = cb.m_closestHitFraction;
+	pTrace->fraction = (float)cb.m_closestHitFraction;
 	ConvertPosToHL(cb.m_hitPointWorld, pTrace->endpos);
 	ConvertDirectionToHL(cb.m_hitNormalWorld, pTrace->plane.normal);
 }
@@ -1441,10 +1441,10 @@ void CPhysicsEnvironment::BulletTick(btScalar dt) {
 
 	{
 		for (size_t i = 0; i < m_controllers.size(); i++)
-			m_controllers[i]->Tick(dt);
+			m_controllers[i]->Tick((float)dt);
 
 		for (size_t i = 0; i < m_fluids.size(); i++)
-			m_fluids[i]->Tick(dt);
+			m_fluids[i]->Tick((float)dt);
 	}
 
 	m_inSimulation = false;

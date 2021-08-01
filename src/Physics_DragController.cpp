@@ -45,7 +45,7 @@ bool CPhysicsDragController::IsControlling(const CPhysicsObject *obj) const {
 }
 
 void CPhysicsDragController::Tick(btScalar dt) {
-	for (int i = 0; i < m_ents.size(); i++) {
+	for (size_t i = 0; i < m_ents.size(); i++) {
 		CPhysicsObject *pObject = (CPhysicsObject *)m_ents[i];
 		btRigidBody *body = pObject->GetObject();
 		if (body->getActivationState() == ISLAND_SLEEPING || body->getActivationState() == DISABLE_SIMULATION)
@@ -57,9 +57,9 @@ void CPhysicsDragController::Tick(btScalar dt) {
 		if (!btFuzzyZero(body->getLinearVelocity().length2())) {
 			btVector3 vel(0, 0, 0);
 
-			float dragForce = -1 * pObject->GetDragInDirection(body->getLinearVelocity().normalized()) * m_airDensity * dt;
-			if (dragForce < -1.0f)
-				dragForce = -1.0f;
+			auto dragForce = -1.0 * pObject->GetDragInDirection(body->getLinearVelocity().normalized()) * (btScalar)m_airDensity * dt;
+			if (dragForce < -1.0)
+				dragForce = -1.0;
 
 			// If the drag force actually drags
 			if (dragForce < 0)
@@ -74,9 +74,9 @@ void CPhysicsDragController::Tick(btScalar dt) {
 		if (!btFuzzyZero(body->getAngularVelocity().length2())) {
 			btVector3 ang(0, 0, 0);
 
-			float angDragForce = -1 * pObject->GetAngularDragInDirection(body->getAngularVelocity().normalized()) * m_airDensity * dt;
-			if (angDragForce < -1.0f)
-				angDragForce = -1.0f;
+			auto angDragForce = -1.0 * pObject->GetAngularDragInDirection(body->getAngularVelocity().normalized()) * (btScalar)m_airDensity * dt;
+			if (angDragForce < -1.0)
+				angDragForce = -1.0;
 
 			// If the drag force actually drags
 			if (angDragForce < 0)

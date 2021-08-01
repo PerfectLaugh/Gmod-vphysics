@@ -13,7 +13,7 @@
 void ConvertNodeToHL(const btSoftBody::Node *node, softbodynode_t &nodeOut) {
 	ConvertPosToHL(node->m_x, nodeOut.pos);
 	ConvertPosToHL(node->m_v, nodeOut.vel);
-	nodeOut.invMass = node->m_im;
+	nodeOut.invMass = (float)node->m_im;
 }
 
 void ConvertNodeToBull(const softbodynode_t &node, btSoftBody::Node &nodeOut) {
@@ -160,7 +160,7 @@ void CPhysicsSoftBody::RemoveNode(int i) {
 void CPhysicsSoftBody::RemoveLink(int i) {
 	Assert(i >= 0 && i < m_pSoftBody->m_links.size());
 
-	btSoftBody::Link &link = m_pSoftBody->m_links[i];
+	//btSoftBody::Link &link = m_pSoftBody->m_links[i];
 
 	m_pSoftBody->pointersToIndices();
 	// TODO: Need to update the indices of anything referencing
@@ -172,7 +172,7 @@ void CPhysicsSoftBody::RemoveLink(int i) {
 void CPhysicsSoftBody::RemoveFace(int i) {
 	Assert(i >= 0 && i < m_pSoftBody->m_faces.size());
 
-	btSoftBody::Face &face = m_pSoftBody->m_faces[i];
+	//btSoftBody::Face &face = m_pSoftBody->m_faces[i];
 
 	m_pSoftBody->pointersToIndices();
 	//m_pSoftBody->m_faces.remove(face);
@@ -188,9 +188,9 @@ void CPhysicsSoftBody::RayTest(Ray_t &ray, trace_t *pTrace) const {
 
 	btSoftBody::sRayCast rayCast;
 	m_pSoftBody->rayTest(start, end, rayCast);
-	pTrace->fraction = rayCast.fraction;
+	pTrace->fraction = (float)rayCast.fraction;
 	pTrace->startpos = ray.m_Start + ray.m_StartOffset;
-	pTrace->endpos = ray.m_Start + ray.m_StartOffset + (ray.m_Delta * rayCast.fraction);
+	pTrace->endpos = ray.m_Start + ray.m_StartOffset + (ray.m_Delta * (float)rayCast.fraction);
 }
 
 void CPhysicsSoftBody::BoxTest(Ray_t &ray, trace_t *pTrace) const {
@@ -256,7 +256,7 @@ btSoftBody *CPhysicsSoftBody::GetSoftBody() {
 *************************/
 
 CPhysicsSoftBody *CreateSoftBody(CPhysicsEnvironment *pEnv) {
-	btSoftBody *pSoftBody = new btSoftBody(&pEnv->GetSoftBodyWorldInfo());
+	//btSoftBody *pSoftBody = new btSoftBody(&pEnv->GetSoftBodyWorldInfo());
 	CPhysicsSoftBody *pPhysBody = new CPhysicsSoftBody;
 	return pPhysBody;
 }

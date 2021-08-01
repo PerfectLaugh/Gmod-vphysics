@@ -6,7 +6,7 @@
 
 #define SAFE_DIVIDE(a, b) ((b) != 0 ? (a)/(b) : 0)
 
+double AngDragIntegral(double invInertia, double l, double w, double h);
 void BtMatrix_vimult(const btMatrix3x3 &matrix, const btVector3 &in, btVector3 &out);
-float AngDragIntegral(float invInertia, float l, float w, float h);
 
 #endif

@@ -75,7 +75,7 @@ void CPhysics::DestroyEnvironment(IPhysicsEnvironment *pEnvironment) {
 }
 
 IPhysicsEnvironment *CPhysics::GetActiveEnvironmentByIndex(int index) {
-	if (index < 0 || index >= m_envList.size()) return nullptr;
+	if (index < 0 || (size_t)index >= m_envList.size()) return nullptr;
 	return m_envList[index];
 }
 
@@ -117,7 +117,7 @@ IPhysicsCollisionSet *CPhysics::FindCollisionSet(unsigned int id) {
 }
 
 void CPhysics::DestroyAllCollisionSets() {
-	for (int i = 0; i < m_collisionSets.size(); i++)
+	for (size_t i = 0; i < m_collisionSets.size(); i++)
 		delete (CPhysicsCollisionSet *)m_collisionSets[i];
 
 	m_collisionSets.clear();

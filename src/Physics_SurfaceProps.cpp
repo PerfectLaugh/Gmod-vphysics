@@ -43,11 +43,6 @@ int CPhysicsSurfaceProps::ParseSurfaceData(const char *pFilename, const char *pT
 		int baseMaterial = GetSurfaceIndex("default");
 		if (baseMaterial != -1) {
 			CopyPhysicsProperties(&prop, baseMaterial);
-
-			const CSurface *pSurface = GetInternalSurface(baseMaterial);
-			prop.data.audio = pSurface->data.audio;
-			prop.data.game = pSurface->data.game;
-			prop.data.sounds = pSurface->data.sounds;
 		}
 
 		// Subkeys that contain the actual data
@@ -170,7 +165,7 @@ int CPhysicsSurfaceProps::GetSurfaceIndex(const char *pSurfacePropName) const {
 
 	unsigned short id = FindString(pSurfacePropName);
 	if (id != 0) {
-		for (int i = 0; i < m_props.size(); i++) {
+		for (size_t i = 0; i < m_props.size(); i++) {
 			if (m_props[i].m_name == id)
 				return i;
 		}
@@ -202,7 +197,7 @@ const char *CPhysicsSurfaceProps::GetString(unsigned short stringTableIndex) con
 }
 
 const char *CPhysicsSurfaceProps::GetPropName(int surfaceDataIndex) const {
-	if (surfaceDataIndex < 0 || surfaceDataIndex > m_props.size())
+	if (surfaceDataIndex < 0 || (size_t)surfaceDataIndex >= m_props.size())
 		return "default";
 
 	return m_strings.at(m_props[surfaceDataIndex].m_name).c_str();
@@ -236,14 +231,14 @@ int CPhysicsSurfaceProps::GetReservedSurfaceIndex(const char *pSurfacePropName) 
 }
 
 CSurface *CPhysicsSurfaceProps::GetInternalSurface(int materialIndex) {
-	if (materialIndex < 0 || materialIndex > m_props.size()-1)
+	if (materialIndex < 0 || (size_t)materialIndex >= m_props.size())
 		return NULL;
 
 	return &m_props[materialIndex];
 }
 
 const CSurface *CPhysicsSurfaceProps::GetInternalSurface(int materialIndex) const {
-	if (materialIndex < 0 || materialIndex > m_props.size()-1)
+	if (materialIndex < 0 || (size_t)materialIndex >= m_props.size())
 		return NULL;
 
 	return &m_props[materialIndex];
@@ -254,7 +249,7 @@ void CPhysicsSurfaceProps::CopyPhysicsProperties(CSurface *pOut, int baseIndex) 
 
 	const CSurface *pSurface = GetInternalSurface(baseIndex);
 	if (pSurface) {
-		pOut->data.physics = pSurface->data.physics;
+		pOut->data = pSurface->data;
 	}
 }
 

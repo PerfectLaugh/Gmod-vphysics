@@ -18,12 +18,14 @@ struct shadowcontrol_params_t {
 	btScalar		maxAngular;
 	btScalar		maxDampAngular;
 	btVector3		lastPosition;
-	float			dampFactor;
-	float			teleportDistance;
+	btScalar		dampFactor;
+	btScalar		teleportDistance;
 };
 
-class CShadowController : public IController, public IPhysicsShadowController, public IObjectEventListener
+ATTRIBUTE_ALIGNED16(class) CShadowController : public IController, public IPhysicsShadowController, public IObjectEventListener
 {
+	public:
+		BT_DECLARE_ALIGNED_ALLOCATOR();
 	public:
 		CShadowController(CPhysicsObject *pObject, bool allowTranslation, bool allowRotation);
 		~CShadowController();
@@ -70,7 +72,7 @@ class CShadowController : public IController, public IPhysicsShadowController, p
 		CPhysicsObject *		m_pObject;
 		float					m_secondsToArrival;
 		btVector3				m_currentSpeed;
-		float					m_savedMass;
+		btScalar				m_savedMass;
 		float					m_timeOffset;
 		int						m_savedMaterialIndex;
 		int						m_ticksSinceUpdate;

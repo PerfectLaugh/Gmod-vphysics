@@ -123,7 +123,7 @@ void CPhysicsFrictionSnapshot::NextFrictionData() {
 
 float CPhysicsFrictionSnapshot::GetFrictionCoefficient() {
 	btManifoldPoint bullManifoldPoint = m_manifolds[m_iCurManifold]->getContactPoint(m_iCurContactPoint);
-	return bullManifoldPoint.m_combinedFriction;
+	return (float)bullManifoldPoint.m_combinedFriction;
 }
 
 /***********************

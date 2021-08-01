@@ -5,10 +5,10 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-float AngDragIntegral(float invInertia, float l, float w, float h) {
-	float w2 = w*w;
-	float l2 = l*l;
-	float h2 = h*h;
+double AngDragIntegral(double invInertia, double l, double w, double h) {
+	auto w2 = w*w;
+	auto l2 = l*l;
+	auto h2 = h*h;
 
 	return invInertia * ((1.f/3.f)*w2*l*l2 + 0.5 * w2*w2*l + l*w2*h2);
 }
