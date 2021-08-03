@@ -39,43 +39,4 @@ protected:
 	btGhostObjectCallback* m_callback;
 };
 
-class btConvexHullShapeWithData : public btConvexHullShape
-{
-public:
-	virtual ~btConvexHullShapeWithData() {}
-
-	int getUserData()
-	{
-		return m_userData;
-	}
-
-	void setUserData(int data)
-	{
-		m_userData = data;
-	}
-
-protected:
-	int m_userData;
-};
-
-class btConvexTriangleMeshShapeWithData : public btConvexTriangleMeshShape
-{
-public:
-	btConvexTriangleMeshShapeWithData(btStridingMeshInterface * meshInterface, bool calcAabb = true) : btConvexTriangleMeshShape(meshInterface, calcAabb), m_userData(0) {}
-	virtual ~btConvexTriangleMeshShapeWithData() {}
-
-	int getUserData()
-	{
-		return m_userData;
-	}
-
-	void setUserData(int data)
-	{
-		m_userData = data;
-	}
-
-protected:
-	int m_userData;
-};
-
 #endif // VPHYSICS_BULLET_H_

@@ -30,20 +30,20 @@ ATTRIBUTE_ALIGNED16(class) CPhysCollide {
 			return m_pShape;
 		}
 
-		const btCompoundShape *GetCompoundShape() const {
+		const btCompoundShape* GetCompoundShape() const {
 			Assert(IsCompound());
 			if (!IsCompound())
 				return NULL;
 
-			return (btCompoundShape *)m_pShape;
+			return (btCompoundShape*)m_pShape;
 		}
 
-		btCompoundShape *GetCompoundShape() {
+		btCompoundShape* GetCompoundShape() {
 			Assert(IsCompound());
 			if (!IsCompound())
 				return NULL;
 
-			return (btCompoundShape *)m_pShape;
+			return (btCompoundShape*)m_pShape;
 		}
 
 		const btConvexShape *GetConvexShape() const {
@@ -208,10 +208,21 @@ class CPhysicsCollision : public IPhysicsCollision32 {
 		bool					TraceBoxAA(const Ray_t& ray, const CPhysCollide* pCollide, trace_t* ptr);
 
 	private:
+		float					CollisionShapeVolume(btCollisionShape* pShape) const;
+		float					CollisionShapeSurfaceArea(btCollisionShape* pShape) const;
+
+	private:
 		std::vector<bboxcache_t> m_bboxCache;
 		bool					m_enableBBoxCache;
 };
 
 extern CPhysicsCollision g_PhysicsCollision;
+
+struct CollisionData {
+	int gamedata;
+	int info;
+
+	CollisionData() : gamedata(0), info(0) {}
+};
 
 #endif // PHYSICS_COLLISION_H

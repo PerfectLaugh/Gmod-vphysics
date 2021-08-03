@@ -594,8 +594,8 @@ CPhysicsEnvironment::CPhysicsEnvironment() {
 	m_pBulletGhostCallback	= NULL;
 	m_pBulletSolver			= NULL;
 
-	m_timestep = 0.f;
-	m_invPSIScale = 0.f;
+	m_timestep = 0.0;
+	m_invPSIScale = 0.0;
 	m_simPSICurrent = 0;
 	m_simPSI = 0;
 
@@ -660,12 +660,12 @@ CPhysicsEnvironment::CPhysicsEnvironment() {
 	m_softBodyWorldInfo.m_sparsesdf.Initialize();
 
 	m_pBulletEnvironment->getSolverInfo().m_solverMode |= SOLVER_SIMD;
+	m_pBulletEnvironment->setApplySpeculativeContactRestitution(true);
 
 	// TODO: Threads solve any oversized batches (>32?), otherwise solving done on main thread.
 	/*
 	m_pBulletEnvironment->getSolverInfo().m_minimumSolverBatchSize = 128; // Combine islands up to this many constraints
 	m_pBulletEnvironment->getDispatchInfo().m_allowedCcdPenetration = 0.0001f;
-	m_pBulletEnvironment->setApplySpeculativeContactRestitution(true);
 	*/
 	//m_pBulletEnvironment->getDispatchInfo().m_dispatchFunc = btDispatcherInfo::DISPATCH_CONTINUOUS;
 
@@ -1068,29 +1068,28 @@ void CPhysicsEnvironment::Simulate(float deltaTime) {
 	}
 
 	// sim PSI: How many substeps are done in a single simulation step
-	m_simPSI = cvar_substeps.GetInt() != 0 ? cvar_substeps.GetInt() : 1;
+	m_simPSI = cvar_substeps.GetInt() >= 0 ? cvar_substeps.GetInt() : 1;
 	m_simPSICurrent = m_simPSI; // Substeps left in this step
 	m_numSubSteps = m_simPSI;
 	m_curSubStep = 0;
 	
-	// Simulate no less than 1 ms
-	if (deltaTime > 0.0001) {
-		// Now mark us as being in simulation. This is used for callbacks from bullet mid-simulation
-		// so we don't end up doing stupid things like deleting objects still in use
-		m_inSimulation = true;
+	m_subStepTime = m_timestep;
 
-		m_subStepTime = m_timestep;
-		
-		// Okay, how this fixed timestep shit works:
-		// The game sends in deltaTime which is the amount of time that has passed since the last frame
-		// Bullet will add the deltaTime to its internal counter
-		// When this internal counter exceeds m_timestep (param 3 to the below), the simulation will run for fixedTimeStep seconds
-		// If the internal counter does not exceed fixedTimeStep, bullet will just interpolate objects so the game can render them nice and happy
-		m_pBulletEnvironment->stepSimulation(deltaTime, 4, m_timestep);
+	// Now mark us as being in simulation. This is used for callbacks from bullet mid-simulation
+	// so we don't end up doing stupid things like deleting objects still in use
+	m_inSimulation = true;
+	
+	// Okay, how this fixed timestep shit works:
+	// The game sends in deltaTime which is the amount of time that has passed since the last frame
+	// Bullet will add the deltaTime to its internal counter
+	// When this internal counter exceeds m_timestep (param 3 to the below), the simulation will run for fixedTimeStep seconds
+	// If the internal counter does not exceed fixedTimeStep, bullet will just interpolate objects so the game can render them nice and happy
 
-		// No longer in simulation!
-		m_inSimulation = false;
-	}
+	// PerfectLaugh: I decided to decrease substeptime since tunneling is too annoying.
+	m_pBulletEnvironment->stepSimulation(deltaTime, m_numSubSteps, 1.0 / 128.0);
+
+	// No longer in simulation!
+	m_inSimulation = false;
 
 #if DEBUG_DRAW
 	m_debugdraw->DrawWorld();
